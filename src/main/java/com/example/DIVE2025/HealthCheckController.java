@@ -9,7 +9,7 @@ public class HealthCheckController {
 
     @GetMapping("/")
     public String test(){
-        return "dive2025 API SERVER입니다.";
+        return "dive2025 API SERVER입니다!";
     }
 
     @GetMapping("/env")
