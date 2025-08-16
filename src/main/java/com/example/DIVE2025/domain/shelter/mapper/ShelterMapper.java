@@ -12,7 +12,7 @@ import java.util.List;
 public interface ShelterMapper {
 
     /**
-     * 매칭 우선순위: 1. shelterFeature == animalCondition(일치하면 0. 불일치 1) 2. 거리 오름차순
+     * 매칭 우선순위: 1.shelter에 여분의 자리가 있는지 2. shelterFeature == animalCondition(일치하면 0. 불일치 1) 3. 거리 오름차순
      */
     List<RecommendResponseDto> recommendedShelterId(
             @Param("animalCondition")AnimalCondition animalCondition,
