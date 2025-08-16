@@ -47,6 +47,8 @@ public class Rescued {
     private LocalDate moveDate;
     private LocalDate protectEndDate;
 
+    private java.time.LocalDateTime updatedAt;
+
     @Builder
     public Rescued(Long id, Long shelterId, String desertionNo, String careRegNo,
                    LocalDate happenDt,

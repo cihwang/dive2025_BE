@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.rescued.mapper.RescuedMapper">
+
+    <insert id="upsert" parameterType="com.example.DIVE2025.domain.rescued.entity.Rescued">
+        INSERT INTO rescued
+        (shelter_id, desertion_no, happen_dt, up_kind_nm, kind_nm, age, weight,
+         neuter_yn, sex, rfid_cd, popfile1, popfile2,
+         protection_status, rescue_date, move_date, protect_end_date, care_reg_no)
+        SELECT s.id,
+               #{desertionNo},
+               #{happenDt},
+               #{upkindNm},
+               #{kindNm},
+               #{age},
+               #{weight},
+               #{neuterYn},
+               #{sex},
+               #{rfidCd},
+               #{popfile1},
+               #{popfile2},
+               #{protectionStatus},
+               #{rescueDate},
+               #{moveDate},
+               #{protectEndDate},
+               #{careRegNo}
+        FROM shelter_registration sr
+                 JOIN shelter s ON s.id = sr.shelter_id
+        WHERE sr.care_reg_no = #{careRegNo}
+
+        ON DUPLICATE KEY UPDATE
+            /* 1) 보호상태가 실제로 바뀔 때만 갱신 */
+            protection_status = <![CDATA[
+                IF(VALUES(protection_status) <> protection_status,
+                    VALUES(protection_status), protection_status)
+            ]]>,
+
+            /* 2) 이관 발생(care_reg_no 변경)일 때만 관련 값 갱신 */
+            care_reg_no = <![CDATA[
+                IF(VALUES(care_reg_no) <> care_reg_no,
+                    VALUES(care_reg_no), care_reg_no)
+            ]]>,
+            shelter_id = <![CDATA[
+                IF(VALUES(care_reg_no) <> care_reg_no,
+                    VALUES(shelter_id), shelter_id)
+            ]]>,
+            move_date = <![CDATA[
+                IF(VALUES(care_reg_no) <> care_reg_no,
+                COALESCE(VALUES(move_date), CURRENT_DATE), move_date)
+            ]]>,
+
+            /* 보호만료일/히스토리성 값은 그대로 유지 */
+            /* protect_end_date = protect_end_date, -- 명시 안 해도 됨 */
+
+            /* 3) 실제 변경이 두 경우 중 하나라도 있으면 updated_at 갱신 */
+            updated_at = <![CDATA[
+                IF(VALUES(protection_status) <> protection_status
+                    OR VALUES(care_reg_no) <> care_reg_no,
+                    NOW(), updated_at)
+            ]]>
+    </insert>
+
+    <!-- 종료건 삭제 -->
+    <delete id="deleteByDesertionNo" parameterType="string">
+        DELETE FROM rescued WHERE desertion_no = #{desertionNo}
+    </delete>
+
+
+
+
+</mapper>
