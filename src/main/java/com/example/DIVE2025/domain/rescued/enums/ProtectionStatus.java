@@ -8,9 +8,8 @@ public enum ProtectionStatus {
     FINISHED;
 
     public static ProtectionStatus fromCode(String code) {
-        if(code != null && code.contains("보호")){
-            return PROTECTED;
-        }
-        return FINISHED;
+        if (code == null) return FINISHED;
+        String v = code.replaceAll("\\s", ""); // 공백 제거
+        return v.contains("보호") ? PROTECTED : FINISHED;
     }
 }
