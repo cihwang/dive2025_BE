@@ -6,16 +6,28 @@
 <mapper namespace="com.example.DIVE2025.domain.shelter.mapper.ShelterMapper">
 
     <select id="recommendedShelterId" resultType="com.example.DIVE2025.domain.shelter.dto.RecommendResponseDto">
-        SELECT id, username, description,
+        SELECT s.id, s.username, s.description,
                (    6371 * acos(
                     cos(radians(#{latitude}))
-                        * cos(radians(latitude))
-                        * cos(radians(longitude) - radians(#{longitude}))
-                    + sin(radians(#{latitude})) * sin(radians(latitude))
+                        * cos(radians(s.latitude))
+                        * cos(radians(s.longitude) - radians(#{longitude}))
+                    + sin(radians(#{latitude})) * sin(radians(s.latitude))
                 )) AS distance,
-            CASE WHEN shelter_feature = #{animalCondition} THEN 0 ELSE 1 END AS match_priority
-        FROM shelter
-        WHERE #{latitude} != latitude
+            (sc.total_capacity - sc.cur_capacity) AS remain_capacity,
+            CASE WHEN s.shelter_feature = #{animalCondition} THEN 0 ELSE 1 END AS match_priority
+        FROM shelter s
+        JOIN (
+            SELECT sc1.shelter_id, sc1.total_capacity, sc1.cur_capacity
+            FROM shelter_capacity sc1
+            WHERE sc1.updated_at = (
+                    SELECT MAX(sc2.updated_at)
+                    FROM shelter_capacity sc2
+                    WHERE sc1.shelter_id = sc2.shelter_id
+                )
+        ) AS sc
+        ON s.id = sc.shelter_id
+        WHERE #{s.latitude} != latitude AND
+             (sc.total_capacity - sc.cur_capacity) > 0
         ORDER BY match_priority ASC, distance ASC
     </select>
 
