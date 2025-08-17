@@ -46,7 +46,7 @@ jobs:
           else
             CURRENT_UPSTREAM=green
           fi
-          
+
           echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> "$GITHUB_ENV"
 
           if [ "$CURRENT_UPSTREAM" = "blue" ]; then
