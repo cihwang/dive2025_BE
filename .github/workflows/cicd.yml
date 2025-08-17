@@ -1,9 +1,11 @@
-name: cicd
+name: ci/cd
 
 on:
   push:
     branches:
       - 'main'
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: read
