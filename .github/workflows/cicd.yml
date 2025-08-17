@@ -39,29 +39,32 @@ jobs:
     steps:
       - name: Set target IP
         run: |
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "http://${{ secrets.PAW_ON_SERVER_IP }}/env") || true
-          if [ "$STATUS" = "200" ]; then
-            CURRENT_UPSTREAM=$(curl -s "http://${{ secrets.PAW_ON_SERVER_IP }}/env")
-          else
-            CURRENT_UPSTREAM=green
-          fi
+               STATUS=$(curl -o /dev/null -s -w "%{http_code}" "http://${{ secrets.PAW_ON_SERVER_IP }}/env") || true
+               if [ "$STATUS" = "200" ]; then
+               CURRENT_UPSTREAM=$(curl -s "http://${{ secrets.PAW_ON_SERVER_IP }}/env")
+               else
+               CURRENT_UPSTREAM=green
+               fi
           
-          echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> $GITHUB_ENV
+          #          current_upstream: 현재 진행중인 서버
+               echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> $GITHUB_ENV
           
-          if [ "$CURRENT_UPSTREAM" = "blue" ]; then
-            echo "CURRENT_PORT=8080" >> $GITHUB_ENV
-            echo "STOPPED_PORT=8081" >> $GITHUB_ENV
-            echo "TARGET_UPSTREAM=green" >> $GITHUB_ENV
-            echo "NEW_PORT=8081" >> $GITHUB_ENV
-          elif [ "$CURRENT_UPSTREAM" = "green" ]; then
-            echo "CURRENT_PORT=8081" >> $GITHUB_ENV
-            echo "STOPPED_PORT=8080" >> $GITHUB_ENV
-            echo "TARGET_UPSTREAM=blue" >> $GITHUB_ENV
-            echo "NEW_PORT=8080" >> $GITHUB_ENV
-          else
-            echo "error"
-            exit 1
-          fi
+          #          target_upstream: 새로 올릴 서버 / current_port: 현재 서버 포트 / stopped_port, new_port: 새로 올릴 포트 
+               
+               if [ "$CURRENT_UPSTREAM" = "blue" ]; then
+               echo "CURRENT_PORT=8080" >> $GITHUB_ENV
+               echo "STOPPED_PORT=8081" >> $GITHUB_ENV
+               echo "TARGET_UPSTREAM=green" >> $GITHUB_ENV
+               echo "NEW_PORT=8081" >> $GITHUB_ENV
+               elif [ "$CURRENT_UPSTREAM" = "green" ]; then
+               echo "CURRENT_PORT=8081" >> $GITHUB_ENV
+               echo "STOPPED_PORT=8080" >> $GITHUB_ENV
+               echo "TARGET_UPSTREAM=blue" >> $GITHUB_ENV
+               echo "NEW_PORT=8080" >> $GITHUB_ENV
+               else
+               echo "error"
+               exit 1
+               fi
 
       - name: EC2 ssh & make container
         uses: appleboy/ssh-action@master
@@ -69,7 +72,6 @@ jobs:
           host: ${{ secrets.PAW_ON_SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           script: |
             set -e
             cd /home/ubuntu/deploy
@@ -87,7 +89,6 @@ jobs:
           host: ${{ secrets.PAW_ON_SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           script: |
             tries=0
             until curl -fs "http://127.0.0.1:${{ env.NEW_PORT }}/env" >/dev/null; do
@@ -105,12 +106,11 @@ jobs:
           host: ${{ secrets.PAW_ON_SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           script: |
             docker exec -i my-nginx sh -lc \
               'echo "set \$service_url ${{ env.TARGET_UPSTREAM }};" > /etc/nginx/conf.d/service-env.inc && nginx -t && nginx -s reload'
-      
-      
+
+
 
       - name: Stop current server
         uses: appleboy/ssh-action@master
@@ -118,6 +118,6 @@ jobs:
           username: ubuntu
           host: ${{ secrets.PAW_ON_SERVER_IP }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           script: |
+            sudo docker stop ${{env.CURRENT_UPSTREAM}} || true
             docker rm -f ${{env.CURRENT_UPSTREAM}} || true
