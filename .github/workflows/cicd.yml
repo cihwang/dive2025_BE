@@ -46,6 +46,7 @@ jobs:
           else
             CURRENT_UPSTREAM=green
           fi
+
           echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> "$GITHUB_ENV"
 
           if [ "$CURRENT_UPSTREAM" = "blue" ]; then
@@ -115,4 +116,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           script: |
-            docker rm -f ${{ env.CURRENT_UPSTREAM }} || true
+            sudo docker stop ${{env.CURRENT_UPSTREAM}} || true
+            docker rm -f ${{env.CURRENT_UPSTREAM}} || true
+
