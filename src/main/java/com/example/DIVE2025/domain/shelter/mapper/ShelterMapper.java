@@ -1,8 +1,9 @@
 package com.example.DIVE2025.domain.shelter.mapper;
 
 import com.example.DIVE2025.domain.rescued.enums.AnimalCondition;
-import com.example.DIVE2025.domain.shelter.dto.RecommendRequestDto;
+import com.example.DIVE2025.domain.shelter.dto.GetUsernameResponseDto;
 import com.example.DIVE2025.domain.shelter.dto.RecommendResponseDto;
+import com.example.DIVE2025.domain.shelter.dto.GetUsernameRequestDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -18,4 +19,6 @@ public interface ShelterMapper {
             @Param("animalCondition")AnimalCondition animalCondition,
             @Param("latitude") Double latitude,
             @Param("longitude") Double longitude);
+
+    GetUsernameResponseDto getUsernameById(GetUsernameRequestDto getUsernameVO);
 }

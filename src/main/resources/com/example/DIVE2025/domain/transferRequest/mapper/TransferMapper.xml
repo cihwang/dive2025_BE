@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.transferRequest.Mapper.TransferMapper">
+
+    <insert id="saveTransferRequest">
+        INSERT INTO transfer_request(rescued_id, from_shelter_id, to_shelter_id)
+        VALUES (#{rescuedId}, #{fromShelterId}, #{toShelterId})
+    </insert>
+
+    <update id="updateRequestStatus">
+        UPDATE transfer_request
+        SET request_status = #{requestStatus}, message = #{message}
+        WHERE id = #{trRequestId};
+    </update>
+
+    <delete id="deleteTransferRequest">
+        DELETE FROM transfer_request
+        WHERE id = #{id}
+    </delete>
+
+    <select id="getTransferByFromShelterId"
+            resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
+        SELECT tr.id, tr.rescued_id, sh1.username AS fromShelterName, sh2.username AS toShelterName, tr.request_status, tr.created_at, tr.updated_at
+        FROM transfer_request tr
+        JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
+        JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+        WHERE tr.from_shelter_id = #{fromShelterId}
+    </select>
+
+    <select id="getTransferByToShelterId"
+            resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
+        SELECT tr.id, tr.rescued_id, sh1.username AS fromShelterName, sh2.username AS toShelterName, tr.request_status, tr.created_at, tr.updated_at
+        FROM transfer_request tr
+                 JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
+                 JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+        WHERE tr.to_shelter_id = #{toShelterId}
+    </select>
+
+    <select id="findTrRequestByRescuedId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM transfer_request
+        WHERE rescued_id = #{rescuedId};
+    </select>
+</mapper>
