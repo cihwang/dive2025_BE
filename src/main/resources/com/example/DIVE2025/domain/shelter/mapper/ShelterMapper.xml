@@ -31,4 +31,9 @@
         ORDER BY match_priority ASC, distance ASC
     </select>
 
+    <select id="getUsernameById"
+            resultType="com.example.DIVE2025.domain.shelter.dto.GetUsernameResponseDto">
+        SELECT username FROM shelter WHERE id = #{id}
+    </select>
+
 </mapper>
