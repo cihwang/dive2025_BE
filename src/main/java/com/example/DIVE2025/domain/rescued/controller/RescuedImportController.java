@@ -47,10 +47,10 @@ public class RescuedImportController {
         return ResponseEntity.ok(msg);
     }
 
-    /**
-     * 수동 동기화(최근 N일 버퍼). 기본 3일.
-     *   POST /admin/rescued/sync?days=3&key=run-once
-     */
+
+//      수동 동기화(최근 N일 버퍼). 기본 3일.
+//        POST /admin/rescued/sync?days=3&key=run-once
+
     @PostMapping("/sync")
     public ResponseEntity<String> syncRecent(@RequestParam(name = "days", defaultValue = "3") int days,
                                              @RequestParam("key") String key) {

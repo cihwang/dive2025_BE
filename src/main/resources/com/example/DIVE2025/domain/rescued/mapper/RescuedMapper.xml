@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <mapper namespace="com.example.DIVE2025.domain.rescued.mapper.RescuedMapper">
 
 
@@ -62,6 +62,91 @@
     <delete id="deleteByDesertionNo" parameterType="string">
         DELETE FROM rescued WHERE desertion_no = #{desertionNo}
     </delete>
+
+
+    <sql id="Base_Columns">
+        id, shelter_id, desertion_no, care_reg_no,
+    happen_dt, up_kind_nm, kind_nm, age, weight,
+    neuter_yn, sex, rfid_cd, popfile1, popfile2,
+    protection_status, animal_condition,
+    rescue_date, move_date, protect_end_date, updated_at
+    </sql>
+
+    <resultMap id="RescuedMap" type="com.example.DIVE2025.domain.rescued.entity.Rescued">
+        <id column="id" property="id"/>
+        <result column="shelter_id" property="shelterId"/>
+        <result column="desertion_no" property="desertionNo"/>
+        <result column="care_reg_no" property="careRegNo"/>
+        <result column="happen_dt" property="happenDt"/>
+        <result column="up_kind_nm" property="upkindNm"/>
+        <result column="kind_nm" property="kindNm"/>
+        <result column="age" property="age"/>
+        <result column="weight" property="weight"/>
+        <result column="neuter_yn" property="neuterYn"/>
+        <result column="sex" property="sex"/>
+        <result column="rfid_cd" property="rfidCd"/>
+        <result column="popfile1" property="popfile1"/>
+        <result column="popfile2" property="popfile2"/>
+        <result column="protection_status" property="protectionStatus"/>
+        <result column="animal_condition" property="animalCondition"/>
+        <result column="rescue_date" property="rescueDate"/>
+        <result column="move_date" property="moveDate"/>
+        <result column="protect_end_date" property="protectEndDate"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 1) 보호소별 목록 -->
+    <select id="selectByShelter" resultMap="RescuedMap">
+        SELECT <include refid="Base_Columns"/>
+        FROM rescued
+        WHERE 1=1
+        <if test="careRegNo != null and careRegNo != ''">
+            AND care_reg_no = #{careRegNo}
+        </if>
+        <if test="state != null and state != ''">
+            AND protection_status = #{state}
+        </if>
+        ORDER BY (updated_at IS NULL), updated_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 1-1) 보호소별 보유 수 -->
+    <select id="countByShelter" resultType="map">
+        SELECT shelter_id, care_reg_no, COUNT(*) AS cnt
+        FROM rescued
+        WHERE 1=1
+        <if test="state != null and state != ''">
+            AND protection_status = #{state}
+        </if>
+        GROUP BY shelter_id, care_reg_no
+        ORDER BY cnt DESC
+    </select>
+
+    <!-- 2) 위험(이관 필요) 선별 -->
+    <select id="selectRisky" resultMap="RescuedMap">
+        SELECT <include refid="Base_Columns"/>
+        FROM rescued
+        WHERE 1=1
+        <if test="careRegNo != null and careRegNo != ''">
+            AND care_reg_no = #{careRegNo}
+        </if>
+        <if test="state != null and state != ''">
+            AND protection_status = #{state}
+        </if>
+        AND (
+        <choose>
+            <when test="injuredOnly">
+                animal_condition = 'INJURED'
+            </when>
+            <otherwise>
+                animal_condition = 'INJURED'
+                OR protect_end_date &lt;= DATE_ADD(CURDATE(), INTERVAL #{dueInDays} DAY)
+            </otherwise>
+        </choose>
+        )
+        ORDER BY (updated_at IS NULL), updated_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
 
 
 
