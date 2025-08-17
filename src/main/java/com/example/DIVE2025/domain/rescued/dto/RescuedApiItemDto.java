@@ -4,11 +4,17 @@ import com.example.DIVE2025.domain.rescued.entity.Rescued;
 import com.example.DIVE2025.domain.rescued.enums.NeuterStatus;
 import com.example.DIVE2025.domain.rescued.enums.ProtectionStatus;
 import com.example.DIVE2025.domain.rescued.enums.Sex;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class RescuedApiItemDto {
     private String desertionNo;
