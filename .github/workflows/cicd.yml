@@ -45,9 +45,12 @@ jobs:
           else
             CURRENT_UPSTREAM=green
           fi
-          
+
+#          current_upstream: 현재 진행중인 서버
           echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> $GITHUB_ENV
           
+#          target_upstream: 새로 올릴 서버 / current_port: 현재 서버 포트 / stopped_port, new_port: 새로 올릴 포트 
+        
           if [ "$CURRENT_UPSTREAM" = "blue" ]; then
             echo "CURRENT_PORT=8080" >> $GITHUB_ENV
             echo "STOPPED_PORT=8081" >> $GITHUB_ENV
@@ -120,4 +123,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           script: |
+            sudo docker stop ${{env.CURRENT_UPSTREAM}} || true
             docker rm -f ${{env.CURRENT_UPSTREAM}} || true

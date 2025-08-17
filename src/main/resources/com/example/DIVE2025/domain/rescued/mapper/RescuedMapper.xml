@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.rescued.mapper.RescuedMapper">
+
+
+    <insert id="upsert">
+        INSERT INTO rescued (
+        shelter_id, desertion_no, happen_dt,
+        up_kind_nm, kind_nm, age, weight,
+        neuter_yn, sex, rfid_cd,
+        popfile1, popfile2,
+        protection_status, rescue_date, move_date, protect_end_date,
+        care_reg_no
+        )
+        SELECT
+        s.id,
+        #{e.desertionNo},
+        #{e.happenDt},
+        #{e.upkindNm},
+        #{e.kindNm},
+        #{e.age},
+        #{e.weight},
+        #{e.neuterYn},
+        #{e.sex},
+        #{e.rfidCd},
+        #{e.popfile1},
+        #{e.popfile2},
+        #{e.protectionStatus},
+        #{e.rescueDate},
+        #{e.moveDate},
+        #{e.protectEndDate},
+        #{e.careRegNo}
+        FROM shelter_registration sr
+        JOIN shelter s ON s.id = sr.shelter_id
+        WHERE sr.care_reg_no = #{e.careRegNo}
+        ON DUPLICATE KEY UPDATE
+        /* 상태 변경 시에만 갱신 */
+        protection_status = IF(VALUES(protection_status) != rescued.protection_status,
+        VALUES(protection_status), rescued.protection_status),
+
+        /* 이관(care_reg_no 변경) 시에만 관련 값 갱신 */
+        care_reg_no = IF(VALUES(care_reg_no) != rescued.care_reg_no,
+        VALUES(care_reg_no), rescued.care_reg_no),
+        shelter_id  = IF(VALUES(care_reg_no) != rescued.care_reg_no,
+        VALUES(shelter_id), rescued.shelter_id),
+        move_date   = IF(VALUES(care_reg_no) != rescued.care_reg_no,
+        COALESCE(VALUES(move_date), CURRENT_DATE), rescued.move_date),
+
+        /* 변경이 있었다면 updated_at 갱신 */
+        updated_at  = IF(VALUES(protection_status) != rescued.protection_status
+        OR VALUES(care_reg_no) != rescued.care_reg_no,
+        NOW(), rescued.updated_at)
+    </insert>
+
+
+
+
+
+    <!-- 종료건 삭제 -->
+    <delete id="deleteByDesertionNo" parameterType="string">
+        DELETE FROM rescued WHERE desertion_no = #{desertionNo}
+    </delete>
+
+
+
+
+</mapper>
