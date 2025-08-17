@@ -3,7 +3,7 @@ name: cicd
 on:
   push:
     branches:
-      - 'main'
+      - main
 
 permissions:
   contents: read
@@ -21,6 +21,7 @@ jobs:
           mkdir -p src/main/resources
           echo "${{ secrets.APPLICATION_YML }}" | base64 --decode > src/main/resources/application.yml
           find src
+
       - name: Login to DockerHub
         uses: docker/login-action@v3.3.0
         with:
@@ -29,6 +30,7 @@ jobs:
 
       - name: Build Docker
         run: docker build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/dive2025:latest .
+
       - name: Push Docker
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/dive2025:latest
 
@@ -44,23 +46,22 @@ jobs:
           else
             CURRENT_UPSTREAM=green
           fi
-          
-          echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> $GITHUB_ENV
-          
+          echo "CURRENT_UPSTREAM=$CURRENT_UPSTREAM" >> "$GITHUB_ENV"
+
           if [ "$CURRENT_UPSTREAM" = "blue" ]; then
-            echo "CURRENT_PORT=8080" >> $GITHUB_ENV
-            echo "STOPPED_PORT=8081" >> $GITHUB_ENV
-            echo "TARGET_UPSTREAM=green" >> $GITHUB_ENV
-            echo "NEW_PORT=8081" >> $GITHUB_ENV
+            echo "CURRENT_PORT=8080"    >> "$GITHUB_ENV"
+            echo "STOPPED_PORT=8081"   >> "$GITHUB_ENV"
+            echo "TARGET_UPSTREAM=green" >> "$GITHUB_ENV"
+            echo "NEW_PORT=8081"       >> "$GITHUB_ENV"
           elif [ "$CURRENT_UPSTREAM" = "green" ]; then
-            echo "CURRENT_PORT=8081" >> $GITHUB_ENV
-            echo "STOPPED_PORT=8080" >> $GITHUB_ENV
-            echo "TARGET_UPSTREAM=blue" >> $GITHUB_ENV
-            echo "NEW_PORT=8080" >> $GITHUB_ENV
+            echo "CURRENT_PORT=8081"    >> "$GITHUB_ENV"
+            echo "STOPPED_PORT=8080"   >> "$GITHUB_ENV"
+            echo "TARGET_UPSTREAM=blue"  >> "$GITHUB_ENV"
+            echo "NEW_PORT=8080"       >> "$GITHUB_ENV"
           else
-            echo "error"
-            exit 1
+            echo "error"; exit 1
           fi
+
       - name: EC2 ssh & make container
         uses: appleboy/ssh-action@master
         with:
@@ -71,13 +72,12 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/deploy
-            
             if [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
               echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             fi
-            
             (docker-compose -f "docker-compose-${{ env.TARGET_UPSTREAM }}.yml" pull && \
              docker-compose -f "docker-compose-${{ env.TARGET_UPSTREAM }}.yml" up -d)
+
       - name: Health check (new app)
         uses: appleboy/ssh-action@master
         with:
@@ -95,6 +95,7 @@ jobs:
               echo "Waiting health... ($tries/12)"; sleep 5
             done
             echo "New ${{ env.TARGET_UPSTREAM }} is healthy."
+
       - name: Switch Nginx to target color
         uses: appleboy/ssh-action@master
         with:
@@ -106,14 +107,12 @@ jobs:
             docker exec -i my-nginx sh -lc \
               'echo "set \$service_url ${{ env.TARGET_UPSTREAM }};" > /etc/nginx/conf.d/service-env.inc && nginx -t && nginx -s reload'
 
-
-
       - name: Stop current server
         uses: appleboy/ssh-action@master
         with:
-          username: ubuntu
           host: ${{ secrets.PAW_ON_SERVER_IP }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
           script: |
-            docker rm -f ${{env.CURRENT_UPSTREAM}} || true
+            docker rm -f ${{ env.CURRENT_UPSTREAM }} || true
