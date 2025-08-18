@@ -40,7 +40,7 @@ public class Rescued {
 
     //동물 상세 정보
     private ProtectionStatus protectionStatus; // PROTECTED, FINISHED
-    private AnimalCondition animalCondition; // INJURED, NORMAL
+    private AnimalCondition animalCondition; // NORMAL, MILD, SEVERE
 
     //날짜 정보
     private LocalDate rescueDate;
