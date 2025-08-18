@@ -6,9 +6,11 @@ import com.example.DIVE2025.domain.rescued.dto.RescuedApiResponse;
 import com.example.DIVE2025.domain.rescued.entity.Rescued;
 import com.example.DIVE2025.domain.rescued.enums.ProtectionStatus;
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
+import com.example.DIVE2025.domain.rescued.util.FileUploadUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -30,12 +32,12 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RescuedImportService {
 
     private final RescuedMapper rescuedMapper;
     private final RestTemplate rest;
     private final ObjectMapper lenientObjectMapper;
+    private final FileUploadUtil fileUploadUtil;
 
 
     @Value("${external.abandon.base-url}") private String baseUrl;
@@ -44,6 +46,14 @@ public class RescuedImportService {
     @Value("${external.abandon.rows:1000}") private int rows;
 
     private static final DateTimeFormatter API_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    @Autowired
+    public RescuedImportService(RescuedMapper rescuedMapper, RestTemplate rest, ObjectMapper lenientObjectMapper, FileUploadUtil fileUploadUtil) {
+        this.rescuedMapper = rescuedMapper;
+        this.rest = rest;
+        this.lenientObjectMapper = lenientObjectMapper;
+        this.fileUploadUtil = fileUploadUtil;
+    }
 
     /** 1) 초기 적재: 3년치 + 보호중만 */
     public int initialBuild3YearsProtectOnly() {
@@ -131,6 +141,11 @@ public class RescuedImportService {
                     int n = (e.getProtectionStatus()==ProtectionStatus.FINISHED)
                             ? rescuedMapper.deleteByDesertionNo(e.getDesertionNo())
                             : rescuedMapper.upsert(e);
+
+                    if(e.getProtectionStatus()!=ProtectionStatus.FINISHED) {
+                        fileUploadUtil.uploadImageFromUrl(e.getPopfile1(),e.getShelterId(), e.getDesertionNo());
+                    }
+
                     affected += n;
                     log.debug("{} desertionNo={} -> affected={}",
                             (e.getProtectionStatus()==ProtectionStatus.FINISHED) ? "DEL" : "UPSERT",
