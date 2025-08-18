@@ -2,6 +2,7 @@ package com.example.DIVE2025.domain.rescued.controller;
 
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
 import com.example.DIVE2025.domain.rescued.service.RescuedImportService;
+import com.example.DIVE2025.domain.rescued.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class RescuedImportController {
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final RescuedMapper rescuedMapper;
+    private final FileUploadUtil fileUploadUtil;
 
     /**
      * 초기 적재: 최근 3년치 + 보호중(protect)만 DB 구성
