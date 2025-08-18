@@ -29,7 +29,6 @@ public class RescuedImportController {
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final RescuedMapper rescuedMapper;
-    private final FileUploadUtil fileUploadUtil;
 
     /**
      * 초기 적재: 최근 3년치 + 보호중(protect)만 DB 구성

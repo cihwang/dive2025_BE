@@ -27,7 +27,9 @@ public class FileUploadUtil {
         this.amazonS3Client = amazonS3Client;
     }
 
-    public void uploadImageFromUrl(String rawUrl, String shelterId, String desertionNo) {
+    public void uploadImageFromUrl(String rawUrl, Long sh, String desertionNo) {
+
+        String shelterId = String.valueOf(sh);
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
 
