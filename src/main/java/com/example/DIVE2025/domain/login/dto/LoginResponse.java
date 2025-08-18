@@ -6,7 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class LoginResponse {
-
+    Long shelterId;
     String email;
     String username;
     String role;
