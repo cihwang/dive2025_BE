@@ -1,51 +1,29 @@
 package com.example.DIVE2025.domain.rescued.mapper;
 
-import com.example.DIVE2025.domain.rescued.dto.RescuedDto;
-import com.example.DIVE2025.domain.rescued.entity.Rescued;
+import com.example.DIVE2025.domain.rescued.dto.RescuedRequestDto;
+import com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface RescuedQueryMapper {
 
-    // 1) 특정 보호소의 동물 목록 (PROTECTED 기본, 페이징/선택필터는 XML에서 확장 가능)
-    List<Rescued> findByShelter(
-            @Param("shelterId") Long shelterId,
-            @Param("status") String status,          // "PROTECTED" 권장
-            @Param("upkindNm") String upkindNm,      // "개","고양이"…
-            @Param("kindNm") String kindNmLike,      // 부분검색
-            @Param("sex") String sex,                // "M","F","U"
-            @Param("neuterYn") String neuterYn,      // "Y","N","U"
-            @Param("from") LocalDate from,           // happen_dt 시작
-            @Param("to") LocalDate to,               // happen_dt 끝
-            @Param("offset") int offset,
-            @Param("limit") int limit
-    );
+    /** 보호센터별 보유 동물 목록 (동적 필터/정렬/페이징) */
+    List<RescuedResponseDto> findAnimalsByShelter(@Param("q") RescuedRequestDto q);
 
-    // 2) 특정 보호소 동물 수 (목록과 동일 필터)
-    int countByShelter(
-            @Param("shelterId") Long shelterId,
-            @Param("status") String status,
-            @Param("upkindNm") String upkindNm,
-            @Param("kindNm") String kindNmLike,
-            @Param("sex") String sex,
-            @Param("neuterYn") String neuterYn,
-            @Param("from") LocalDate from,
-            @Param("to") LocalDate to
-    );
+    /** 특정 보호센터(PK) 보유 수 */
+    long countByShelter(@Param("shelterId") Long shelterId);
 
-    // 3) 보호소별 요약(보호중 마릿수 랭킹)
-    List<RescuedDto> countGroupByShelter(@Param("status") String status);
+    /** 특정 보호센터(등록번호) 보유 수 */
+    long countByCareRegNo(@Param("careRegNo") String careRegNo);
 
-    // 4) 공용 View DTO로 한번에 내려주는 목록 (간단 버전)
-    List<RescuedDto> findViewsByShelter(
-            @Param("shelterId") Long shelterId,
-            @Param("status") String status,
-            @Param("offset") int offset,
-            @Param("limit") int limit
-    );
+    /** 보호센터별 보유 수 그룹핑 (대시보드용) — DTO 없이 HashMap 리스트 */
+    List<HashMap<String, Object>> countGroupByShelter();
 
+    /** 특정 보호센터 내 지역구(care_reg_no)별 카운트 — DTO 없이 HashMap 리스트 */
+    List<HashMap<String, Object>> countByShelterGroupByCareRegNo(@Param("shelterId") Long shelterId);
 }
