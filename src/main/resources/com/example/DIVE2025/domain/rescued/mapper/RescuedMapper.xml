@@ -12,7 +12,7 @@
         neuter_yn, sex, rfid_cd,
         popfile1, popfile2,
         protection_status, rescue_date, move_date, protect_end_date,
-        care_reg_no
+        care_reg_no, animal_condition
         )
         SELECT
         s.id,
@@ -31,10 +31,12 @@
         #{e.rescueDate},
         #{e.moveDate},
         #{e.protectEndDate},
-        #{e.careRegNo}
+        #{e.careRegNo},
+        #{e.animalCondition}
         FROM shelter_registration sr
         JOIN shelter s ON s.id = sr.shelter_id
         WHERE sr.care_reg_no = #{e.careRegNo}
+
         ON DUPLICATE KEY UPDATE
         /* 상태 변경 시에만 갱신 */
         protection_status = IF(VALUES(protection_status) != rescued.protection_status,
@@ -48,10 +50,15 @@
         move_date   = IF(VALUES(care_reg_no) != rescued.care_reg_no,
         COALESCE(VALUES(move_date), CURRENT_DATE), rescued.move_date),
 
+        /*  animal_condition: 새 값이 있으면 갱신 */
+        animal_condition = COALESCE(VALUES(animal_condition), rescued.animal_condition),
+
         /* 변경이 있었다면 updated_at 갱신 */
         updated_at  = IF(VALUES(protection_status) != rescued.protection_status
-        OR VALUES(care_reg_no) != rescued.care_reg_no,
+        OR VALUES(care_reg_no) != rescued.care_reg_no
+        OR VALUES(animal_condition) != rescued.animal_condition,  <!-- ★ 조건에 포함 -->
         NOW(), rescued.updated_at)
+
     </insert>
 
 
@@ -147,6 +154,7 @@
         ORDER BY (updated_at IS NULL), updated_at DESC, id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
+
 
 
 

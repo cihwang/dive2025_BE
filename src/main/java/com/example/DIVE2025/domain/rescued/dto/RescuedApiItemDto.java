@@ -30,6 +30,7 @@ public class RescuedApiItemDto {
     private String careRegNo;
     private String popfile1;
     private String popfile2;
+    private String specialMark;
 
 
     private static final DateTimeFormatter API_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
