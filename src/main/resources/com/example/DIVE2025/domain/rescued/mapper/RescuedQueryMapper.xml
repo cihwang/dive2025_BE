@@ -72,7 +72,7 @@
         r.shelter_id                   AS shelterId,
         s.description                  AS shelterName,
         /* 필요 시 컬럼명 맞춰 수정: s.feature / s.is_hospital 등 */
-        s.feature                      AS shelterFeature,
+        NULL                      AS shelterFeature,
 
         /* 동물 기본 */
         r.up_kind_nm                   AS upkindNm,
