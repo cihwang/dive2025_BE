@@ -2,6 +2,7 @@ package com.example.DIVE2025.domain.rescued.controller;
 
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
 import com.example.DIVE2025.domain.rescued.service.RescuedImportService;
+import com.example.DIVE2025.domain.rescued.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ public class RescuedImportController {
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
     private final RescuedMapper rescuedMapper;
+    private final FileUploadUtil fileUploadUtil;
 
     /**
      * 초기 적재: 최근 3년치 + 보호중(protect)만 DB 구성
@@ -47,10 +49,10 @@ public class RescuedImportController {
         return ResponseEntity.ok(msg);
     }
 
-    /**
-     * 수동 동기화(최근 N일 버퍼). 기본 3일.
-     *   POST /admin/rescued/sync?days=3&key=run-once
-     */
+
+//      수동 동기화(최근 N일 버퍼). 기본 3일.
+//        POST /admin/rescued/sync?days=3&key=run-once
+
     @PostMapping("/sync")
     public ResponseEntity<String> syncRecent(@RequestParam(name = "days", defaultValue = "3") int days,
                                              @RequestParam("key") String key) {

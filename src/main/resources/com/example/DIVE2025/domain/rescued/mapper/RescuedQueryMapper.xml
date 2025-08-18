@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.rescued.mapper.RescuedQueryMapper">
+
+    <!-- 공통 WHERE (protection_status 조건 없음) -->
+    <sql id="COMMON_WHERE">
+        WHERE 1=1
+        <if test="q.shelterId != null">
+            AND r.shelter_id = #{q.shelterId}
+        </if>
+
+        <!-- ✅ care_reg_no: 여러 개가 오면 IN, 아니면 단일 = -->
+        <choose>
+            <when test="q.careRegNos != null and q.careRegNos.size() > 0">
+                AND r.care_reg_no IN
+                <foreach collection="q.careRegNos" item="crn" open="(" separator="," close=")">
+                    #{crn}
+                </foreach>
+            </when>
+            <when test="q.careRegNo != null and q.careRegNo != ''">
+                AND r.care_reg_no = #{q.careRegNo}
+            </when>
+            <!-- 둘 다 없으면 care_reg_no 조건 미적용 -->
+        </choose>
+
+        <if test="q.sex != null">
+            AND r.sex = #{q.sex}
+        </if>
+        <if test="q.neuterYn != null">
+            AND r.neuter_yn = #{q.neuterYn}
+        </if>
+        <if test="q.upkindNm != null and q.upkindNm != ''">
+            AND r.up_kind_nm = #{q.upkindNm}
+        </if>
+        <if test="q.kindNm != null and q.kindNm != ''">
+            AND r.kind_nm LIKE CONCAT('%', #{q.kindNm}, '%')
+        </if>
+
+        <if test="q.rescueDateFrom != null">
+            AND r.happen_dt &gt;= #{q.rescueDateFrom}
+        </if>
+        <if test="q.rescueDateTo != null">
+            AND r.happen_dt &lt;= #{q.rescueDateTo}
+        </if>
+
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (
+            r.kind_nm LIKE CONCAT('%', #{q.keyword}, '%')
+            OR r.weight  LIKE CONCAT('%', #{q.keyword}, '%')
+            OR r.age     LIKE CONCAT('%', #{q.keyword}, '%')
+            )
+        </if>
+    </sql>
+
+
+    <!-- 목록 조회 -->
+    <select id="findAnimalsByShelter"
+            parameterType="map"
+            resultType="com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto">
+        <!-- 안전한 정수 오프셋 바인딩 -->
+        <bind name="offset" value="q.page * q.size"/>
+
+        SELECT
+        /* 기본 식별 */
+        r.id                           AS id,
+        r.desertion_no                 AS desertionNo,
+
+        /* 보호소 정보 */
+        r.shelter_id                   AS shelterId,
+        s.description                  AS shelterName,
+        /* 필요 시 컬럼명 맞춰 수정: s.feature / s.is_hospital 등 */
+        s.feature                      AS shelterFeature,
+
+        /* 동물 기본 */
+        r.up_kind_nm                   AS upkindNm,
+        r.kind_nm                      AS kindNm,
+        r.age                          AS age,
+        r.weight                       AS weight,
+        r.sex                          AS sex,
+        r.neuter_yn                    AS neuterYn,
+
+        /* 상태/일자 */
+        r.protection_status            AS protectionStatus,
+        r.happen_dt                    AS happenDt,
+        r.rescue_date                  AS rescueDate,
+        r.move_date                    AS moveDate,
+        r.protect_end_date             AS protectEndDate,
+
+        /* 기타 */
+        r.care_reg_no                  AS careRegNo,
+        r.rfid_cd                      AS rfidCd,
+        r.popfile1                     AS popfile1,
+        r.popfile2                     AS popfile2,
+
+        /* 공통 계산 필드 */
+        DATEDIFF(CURDATE(), r.happen_dt)                            AS daysProtected,
+        CASE WHEN DATEDIFF(CURDATE(), r.happen_dt) &gt; 10 THEN TRUE ELSE FALSE END AS overdue,
+        /* 2번 기능에서 Service가 채울 예정 (지금은 null) */
+        NULL                           AS needsTransfer
+
+        FROM rescued r
+        JOIN shelter s ON s.id = r.shelter_id
+        <include refid="COMMON_WHERE"/>
+
+        <!-- 정렬: 기본 rescue_date, 대안 happen_dt -->
+        <choose>
+            <when test="q.sort != null and q.sort == 'happenDt'">
+                ORDER BY r.happen_dt
+            </when>
+            <otherwise>
+                ORDER BY r.rescue_date
+            </otherwise>
+        </choose>
+
+        <choose>
+            <when test="q.order != null and (q.order == 'asc' or q.order == 'ASC')">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+
+        LIMIT #{q.size}
+        OFFSET #{offset}
+    </select>
+
+    <!-- 카운트: PK 기준 -->
+    <select id="countByShelter" resultType="long">
+        SELECT COUNT(*) FROM rescued r
+        WHERE r.shelter_id = #{shelterId}
+    </select>
+
+    <!-- 카운트: 등록번호 기준 -->
+    <select id="countByCareRegNo" resultType="long">
+        SELECT COUNT(*) FROM rescued r
+        WHERE r.care_reg_no = #{careRegNo}
+    </select>
+
+    <!-- 보호센터별 그룹 카운트 -->
+    <select id="countGroupByShelter" resultType="hashmap">
+        SELECT r.shelter_id AS shelterId, COUNT(*) AS count
+        FROM rescued r
+        GROUP BY r.shelter_id
+        ORDER BY r.shelter_id ASC
+    </select>
+
+    <!-- 특정 보호센터의 지역구별 카운트 -->
+    <select id="countByShelterGroupByCareRegNo" resultType="hashmap">
+        SELECT
+            r.care_reg_no AS careRegNo,
+            COUNT(*)      AS count
+        FROM rescued r
+        WHERE r.shelter_id = #{shelterId}
+        GROUP BY r.care_reg_no
+        ORDER BY r.care_reg_no
+    </select>
+
+</mapper>
