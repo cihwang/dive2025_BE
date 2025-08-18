@@ -3,6 +3,7 @@ package com.example.DIVE2025.domain.rescued.service;
 
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiItemDto;
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiResponse;
+import com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto;
 import com.example.DIVE2025.domain.rescued.entity.Rescued;
 import com.example.DIVE2025.domain.rescued.enums.ProtectionStatus;
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
@@ -142,8 +143,10 @@ public class RescuedImportService {
                             ? rescuedMapper.deleteByDesertionNo(e.getDesertionNo())
                             : rescuedMapper.upsert(e);
 
+                    RescuedResponseDto shelterIdByDesertionNo = rescuedMapper.getShelterIdByDesertionNo(e.getDesertionNo());
+
                     if(e.getProtectionStatus()!=ProtectionStatus.FINISHED) {
-                        fileUploadUtil.uploadImageFromUrl(e.getPopfile1(),e.getShelterId(), e.getDesertionNo());
+                        fileUploadUtil.uploadImageFromUrl(e.getPopfile1(), shelterIdByDesertionNo.getShelterId(), e.getDesertionNo());
                     }
 
                     affected += n;

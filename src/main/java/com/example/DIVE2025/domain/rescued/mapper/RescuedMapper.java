@@ -1,6 +1,7 @@
 package com.example.DIVE2025.domain.rescued.mapper;
 
 
+import com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto;
 import com.example.DIVE2025.domain.rescued.entity.Rescued;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -13,6 +14,8 @@ import java.util.Map;
 public interface RescuedMapper {
 
     int upsert(@Param("e") Rescued e);
+
+    RescuedResponseDto getShelterIdByDesertionNo(@Param("desertionNo") String desertionNo);
 
     @Select("SELECT care_reg_no FROM shelter_registration")
     List<String> selectAllCareRegNos();

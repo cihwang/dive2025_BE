@@ -148,7 +148,12 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
-
+    <select id="getShelterIdByDesertionNo"
+            resultType="com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto">
+        SELECT shelter_id
+        FROM rescued
+        WHERE desertion_no = ${desertionNo}
+    </select>
 
 
 </mapper>
