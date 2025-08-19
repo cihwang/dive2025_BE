@@ -57,7 +57,7 @@ public class JwtProcessor {
     private final Key key;
 
     // 생성자에서 Secret Key를 Base64 디코딩하여 Key로 변환
-    public JwtProcessor(@Value("${jwt.secret}") String secretKey) {
+    public JwtProcessor(@Value("${spring.jwt.secret}") String secretKey) {
         byte[] decodedKey = Base64.getDecoder().decode(secretKey); // Base64 디코딩
         this.key = Keys.hmacShaKeyFor(decodedKey); // HS384에 적합한 Key 생성
     }

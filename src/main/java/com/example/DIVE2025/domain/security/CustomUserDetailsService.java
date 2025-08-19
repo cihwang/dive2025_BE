@@ -1,29 +1,26 @@
 package com.example.DIVE2025.domain.security;
 
+import com.example.DIVE2025.domain.member.mapper.MemberMapper;
+import com.example.DIVE2025.domain.security.dto.CustomUserDetails;
+import com.example.DIVE2025.domain.shelter.entity.Shelter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import shop.ninescent.mall.member.domain.User;
-import shop.ninescent.mall.member.repository.UserRepository;
-import shop.ninescent.mall.security.dto.CustomUserDetails;
-
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-
-    private final UserRepository userRepository;
-
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final MemberMapper memberMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUserId(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-        return new CustomUserDetails(user); // CustomUserDetails로 반환
+        Shelter shelter = memberMapper.findByUsername(username);
+        if (shelter == null) {
+            throw new UsernameNotFoundException("Shelter not found with username: " + username);
+        }
+        return CustomUserDetails.fromShelterEntity(shelter); //Shelter → CustomUserDetails 변환
     }
 }

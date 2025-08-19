@@ -1,5 +1,8 @@
 package com.example.DIVE2025.domain.security;
 
+import com.example.DIVE2025.domain.security.dto.UserLoginRequestDTO;
+import com.example.DIVE2025.domain.security.dto.UserLoginResponseDTO;
+import com.example.DIVE2025.domain.security.dto.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -8,34 +11,26 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import shop.ninescent.mall.member.domain.User;
-import shop.ninescent.mall.security.dto.UserLoginRequestDTO;
-import shop.ninescent.mall.security.dto.UserLoginResponseDTO;
 
 @Slf4j
-@RequestMapping("/api/auth")
 @RestController
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class SecurityController {
-
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
-
     /**
-     * 사용자 로그인
-     *
-     * @param loginRequest 사용자 ID와 비밀번호를 포함한 요청
-     * @return JWT 토큰 및 사용자 정보를 반환
+     * 보호소 로그인
      */
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDTO> login(@RequestBody UserLoginRequestDTO loginRequest) {
-        log.info("로그인 요청 - 사용자 ID: {}", loginRequest.getUserId());
+        log.info("로그인 요청 - 보호소 username: {}", loginRequest.getUsername());
 
         // 사용자 인증 처리
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUserId(), loginRequest.getPassword())
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
         );
 
         // 인증 정보 SecurityContext에 저장
@@ -44,30 +39,26 @@ public class SecurityController {
         // JWT 토큰 생성
         String token = jwtTokenProvider.generateToken(authentication);
 
-        // 응답 생성 (사용자 정보 포함)
+        // 인증된 사용자 정보 가져오기
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+
+        // 응답 생성 (보호소 정보 + 토큰)
         UserLoginResponseDTO response = UserLoginResponseDTO.builder()
                 .token(token)
-                .userId(loginRequest.getUserId())
-                .role(User.Role.valueOf(jwtTokenProvider.extractRole(token))) // JWT에서 역할 정보 추출
+                .shelterId(principal.getShelterId())
+                .username(principal.getUsername())
                 .build();
 
         return ResponseEntity.ok(response);
     }
 
     /**
-     * 사용자 로그아웃
-     *
-     * @return 로그아웃 성공 메시지 반환
+     * 로그아웃
      */
     @PostMapping("/logout")
     public ResponseEntity<String> logout() {
         log.info("로그아웃 요청");
-
-        // SecurityContext에서 인증 정보 삭제
         SecurityContextHolder.clearContext();
-
         return ResponseEntity.ok("로그아웃 성공");
     }
-
-
 }

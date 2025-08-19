@@ -1,62 +1,96 @@
 package com.example.DIVE2025.domain.security.dto;
 
+import com.example.DIVE2025.domain.shelter.entity.Shelter;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import shop.ninescent.mall.member.domain.User;
 
 import java.util.Collection;
+import java.util.Collections;
 
+@Getter
 public class CustomUserDetails implements UserDetails {
 
-    private final User user;
+    private Long shelterId;
+    private String username;
+    private String password;
+    private boolean enabled;
+    private boolean accountNonExpired;
+    private boolean credentialsNonExpired;
+    private boolean accountNonLocked;
+    private Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(User user) {
-        this.user = user;
+    /** 🔹 DB 로그인용 풀 생성자 */
+    public CustomUserDetails(Long shelterId, String username, String password,
+                             boolean enabled, boolean accountNonExpired,
+                             boolean credentialsNonExpired, boolean accountNonLocked) {
+        this.shelterId = shelterId;
+        this.username = username;
+        this.password = password;
+        this.enabled = enabled;
+        this.accountNonExpired = accountNonExpired;
+        this.credentialsNonExpired = credentialsNonExpired;
+        this.accountNonLocked = accountNonLocked;
+        this.authorities = Collections.emptyList();
     }
 
-    // 도메인 User 객체 반환 (커스텀 메서드)
-    public User getUser() {
-        return user;
+    /** 🔹 JWT 토큰 복원용 (비밀번호 불필요) */
+    public CustomUserDetails(String username, Long shelterId) {
+        this.shelterId = shelterId;
+        this.username = username;
+        this.password = ""; // 토큰 인증에는 패스워드 불필요
+        this.enabled = true;
+        this.accountNonExpired = true;
+        this.credentialsNonExpired = true;
+        this.accountNonLocked = true;
+        this.authorities = Collections.emptyList();
     }
 
-    // 권한 반환
+    /** 🔹 Shelter 엔티티 → CustomUserDetails 변환 */
+    public static CustomUserDetails fromShelterEntity(Shelter shelter) {
+        return new CustomUserDetails(
+                shelter.getId(),
+                shelter.getUsername(),
+                shelter.getPassword(),
+                true,  // enabled
+                true,  // accountNonExpired
+                true,  // credentialsNonExpired
+                true   // accountNonLocked
+        );
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // 사용자의 권한을 반환 (권한 로직이 없으면 null 또는 빈 리스트)
-        return null; // 필요시 GrantedAuthority 목록 반환
+        return authorities;
     }
 
     @Override
     public String getPassword() {
-        return user.getPassword(); // 비밀번호 반환
+        return password;
     }
 
     @Override
     public String getUsername() {
-        return user.getUserId(); // 사용자 ID 반환
+        return username;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        // 계정이 만료되지 않았는지 여부
-        return true;
+        return accountNonExpired;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        // 계정이 잠기지 않았는지 여부
-        return true;
+        return accountNonLocked;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        // 자격 증명이 만료되지 않았는지 여부
-        return true;
+        return credentialsNonExpired;
     }
 
     @Override
     public boolean isEnabled() {
-        // 계정이 활성화되었는지 여부
-        return true;
+        return enabled;
     }
 }

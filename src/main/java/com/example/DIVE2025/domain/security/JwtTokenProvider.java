@@ -1,11 +1,10 @@
 package com.example.DIVE2025.domain.security;
 
+import com.example.DIVE2025.domain.security.dto.CustomUserDetails;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -15,75 +14,68 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}") // 충분히 긴 비밀키 문자열
+    @Value("${spring.jwt.secret}") // 충분히 긴 비밀키 문자열
     private String secretKey;
 
-    @Value("${jwt.expiration}") // 토큰 만료 시간 (밀리초)
+    @Value("${spring.jwt.expiration}") // 토큰 만료 시간 (밀리초)
     private long expiration;
 
     private Key key;
 
-    // secretKey를 기반으로 Key 객체를 초기화
     private void initKey() {
         if (key == null) {
             key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         }
     }
 
-    // JWT 토큰 생성
+    /** ✅ Authentication에서 username + shelterId 추출해 JWT 생성 */
     public String generateToken(Authentication authentication) {
-        initKey(); // 키 초기화
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        initKey();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .setSubject(userDetails.getUsername()) // 토큰에 사용자 정보 저장
-                .setIssuedAt(now) // 발급 시간
-                .setExpiration(expiryDate) // 만료 시간
-                .signWith(key) // 서명
+                .setSubject(userDetails.getUsername())   // username
+                .claim("shelterId", userDetails.getShelterId()) // shelterId claim 추가
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key)
                 .compact();
     }
 
-    // JWT 토큰에서 사용자 이름 추출
-    public String getUsernameFromToken(String token) {
-        initKey(); // 키 초기화
+    /** JWT에서 shelterId 추출 */
+    public Long getShelterIdFromToken(String token) {
+        initKey();
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key) // 서명 키 설정
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return claims.getSubject(); // subject(username) 반환
+        return claims.get("shelterId", Long.class);
     }
 
-    // JWT 토큰 검증
+    /** JWT에서 username(subject) 추출 */
+    public String getUsernameFromToken(String token) {
+        initKey();
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    /** 토큰 검증 */
     public boolean validateToken(String token) {
         try {
-            initKey(); // 키 초기화
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
-            return true; // 유효한 토큰
+            initKey();
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
-            System.out.println("JWT 토큰 검증 실패: " + e.getMessage());
-            return false; // 잘못된 토큰
+            System.out.println("JWT 검증 실패: " + e.getMessage());
+            return false;
         }
-    }
-
-    // 인증 객체 생성
-    public Authentication getAuthentication(String username) {
-        return new UsernamePasswordAuthenticationToken(username, null, null);
-    }
-
-    // 토큰에서 역할 정보 추출
-    public String extractRole(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey.getBytes())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.get("role", String.class);
     }
 }

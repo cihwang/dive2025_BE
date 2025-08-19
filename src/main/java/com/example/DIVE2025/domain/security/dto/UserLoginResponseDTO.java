@@ -4,17 +4,23 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import shop.ninescent.mall.member.domain.User;
 
+/**
+ * 보호소 로그인 응답 DTO
+ * - shelter 자체가 user 이므로 userId/email/role 제거
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserLoginResponseDTO {
-    private String token;  // JWT 토큰
-    private Long userNo;   // 사용자 고유 번호
-    private String name;   // 사용자 이름
-    private String userId; // 사용자 ID
-    private String email;  // 사용자 이메일
-    private User.Role role; //사용자 권한
+
+    private String token;       // JWT 액세스 토큰
+    private Long shelterId;     // 보호소 고유 번호 (PK)
+    private String username;    // 로그인 ID
+    private String description; // 보호소 이름/설명
+
+    // 필요시 추가
+    private String tel;         // 보호소 전화번호
+    private String addr;        // 보호소 주소
 }

@@ -6,74 +6,94 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
-import shop.ninescent.mall.security.dto.UserLoginRequestDTO;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.Optional;
 
 @Slf4j
 @Component
 public class JwtUsernamePasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-    private final ObjectMapper objectMapper;
 
-    // 스프링 생성자 주입을 통해 전달
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     public JwtUsernamePasswordAuthenticationFilter(
             AuthenticationManager authenticationManager,
             LoginSuccessHandler loginSuccessHandler,
-            LoginFailureHandler loginFailureHandler ) {
-        super(authenticationManager);
-        this.objectMapper = new ObjectMapper();
+            LoginFailureHandler loginFailureHandler) {
 
-        setFilterProcessesUrl("/api/auth/login");		          // POST 로그인 요청 url
-        setAuthenticationSuccessHandler(loginSuccessHandler);	// 로그인 성공 핸들러 등록
-        setAuthenticationFailureHandler(loginFailureHandler);  // 로그인 실패 핸들러 등록
+        super.setAuthenticationManager(authenticationManager);
+        setFilterProcessesUrl("/api/auth/login");                // 로그인 URL
+        setAuthenticationSuccessHandler(loginSuccessHandler);     // 성공 핸들러
+        setAuthenticationFailureHandler(loginFailureHandler);     // 실패 핸들러
     }
 
-    // 로그인 요청 URL인 경우 로그인 작업 처리
-//    @Override
-//    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-//            throws AuthenticationException {
-//
-//        // 요청 BODY의 JSON에서 username, password  LoginDTO
-//        UserLoginRequestDTO login = LoginDTO.of(request);
-//
-//        // 인증 토큰(UsernamePasswordAuthenticationToken) 구성
-//        UsernamePasswordAuthenticationToken authenticationToken =
-//                new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword());
-//
-//        // AuthenticationManager에게 인증 요청
-//        return getAuthenticationManager().authenticate(authenticationToken);
-//    }
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-            throws AuthenticationException {
-
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
         try {
-            // 요청 본문 디버깅
-            String requestBody = request.getReader().lines().reduce("", (accumulator, actual) -> accumulator + actual);
-            log.debug("Request Body: {}", requestBody);
+            if (!"POST".equalsIgnoreCase(request.getMethod())) {
+                throw new RuntimeException("지원하지 않는 로그인 메서드");
+            }
 
-            // JSON 데이터를 DTO로 변환
-            UserLoginRequestDTO loginRequest = objectMapper.readValue(requestBody, UserLoginRequestDTO.class);
+            // Content-Type 관대하게 판별 (charset 등 포함 허용)
+            String ct = Optional.ofNullable(request.getContentType()).orElse("").toLowerCase(Locale.ROOT);
+            boolean isJson = ct.startsWith(MediaType.APPLICATION_JSON_VALUE);               // application/json; charset=UTF-8
+            boolean isForm = ct.startsWith(MediaType.APPLICATION_FORM_URLENCODED_VALUE);   // application/x-www-form-urlencoded
 
-            // 인증 토큰 구성
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUserId(), loginRequest.getPassword());
+            String username;
+            String password;
 
-            // AuthenticationManager에 인증 요청
-            return getAuthenticationManager().authenticate(authenticationToken);
+            if (isJson) {
+                try (var is = request.getInputStream()) {
+                    var node = objectMapper.readTree(is); // objectMapper 주입 가정
+                    username = Optional.ofNullable(node.get("username")).map(JsonNode::asText).orElse("");
+                    password = Optional.ofNullable(node.get("password")).map(JsonNode::asText).orElse("");
+                }
+            } else if (isForm) {
+                username = Optional.ofNullable(request.getParameter("username")).orElse("");
+                password = Optional.ofNullable(request.getParameter("password")).orElse("");
+            } else {
+                // Content-Type 누락/이상: JSON 시도 후 실패 시 폼 파라미터
+                try (var is = request.getInputStream()) {
+                    String body = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+                    if (!body.isEmpty() && (body.startsWith("{") || body.startsWith("["))) {
+                        var node = objectMapper.readTree(body);
+                        username = Optional.ofNullable(node.get("username")).map(JsonNode::asText).orElse("");
+                        password = Optional.ofNullable(node.get("password")).map(JsonNode::asText).orElse("");
+                    } else {
+                        username = Optional.ofNullable(request.getParameter("username")).orElse("");
+                        password = Optional.ofNullable(request.getParameter("password")).orElse("");
+                    }
+                }
+            }
+
+            // 유니코드 정규화 + trim
+            username = java.text.Normalizer.normalize(username.trim(), java.text.Normalizer.Form.NFC);
+
+            // ✅ 한글 허용 정규식 (2~50자). 필요 없으면 이 블록 자체를 지워도 됩니다.
+            if (!username.matches("^[\\p{L}\\p{N}._@\\-\\s]{2,50}$")) {
+                throw new RuntimeException("아이디/비밀번호를 확인하세요"); // 형식 에러 문구는 완화
+            }
+            if (password.isBlank()) {
+                throw new RuntimeException("아이디/비밀번호를 확인하세요");
+            }
+
+            // 🔑 raw 비밀번호로 토큰 생성 → Provider에서 PasswordEncoder.matches(raw, encoded) 수행
+            var authRequest = new UsernamePasswordAuthenticationToken(username, password);
+            return this.getAuthenticationManager().authenticate(authRequest);
 
         } catch (IOException e) {
-            log.error("JSON 파싱 실패: {}", e.getMessage());
-            throw new RuntimeException("올바르지 않은 로그인 요청 형식입니다.");
+            throw new RuntimeException("로그인 요청 파싱 실패", e);
         }
     }
-
-
 
 }
