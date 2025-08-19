@@ -1,4 +1,4 @@
-package com.example.DIVE2025.config;
+package com.example.DIVE2025.global.config;
 
 
 import org.apache.hc.client5.http.config.RequestConfig;

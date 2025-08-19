@@ -1,4 +1,4 @@
-package com.example.DIVE2025.config;
+package com.example.DIVE2025.global.config;
 
 import com.example.DIVE2025.domain.rescued.service.RescuedImportService;
 import lombok.RequiredArgsConstructor;
