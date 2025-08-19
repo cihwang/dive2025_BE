@@ -83,21 +83,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String p = request.getServletPath();
 
-        // ✅ 공개 엔드포인트 (수정됨)
-        if (path.startsWith("/api/auth/login") || path.startsWith("/api/member/join")) return true;
+        // ✅ Swagger / 문서 / 헬스체크는 JWT 필터 우회
+        if (p.equals("/swagger-ui.html")
+                || p.startsWith("/swagger-ui")
+                || p.startsWith("/v3/api-docs")
+                || p.startsWith("/actuator/health")) {
+            return true;
+        }
 
-        // Swagger / 문서 / 헬스체크
-        if (path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/actuator/health")) return true;
+        // ✅ 공개 엔드포인트(로그인·OAuth 콜백 등)도 우회
+        if (p.startsWith("/api/auth")
+                || p.startsWith("/oauth2")) {
+            return true;
+        }
 
-        // 정적 리소스
-        if (path.startsWith("/css/")
-                || path.startsWith("/js/")
-                || path.startsWith("/images/")) return true;
+        // ✅ 정적 리소스 우회
+        if (p.startsWith("/css/")
+                || p.startsWith("/js/")
+                || p.startsWith("/images/")) {
+            return true;
+        }
+
+        // (선택) 에러 페이지 우회: 오류 처리 중 재귀 방지
+        if (p.equals("/error")) {
+            return true;
+        }
 
         return false;
     }
+
 }

@@ -48,18 +48,38 @@ public class SecurityConfig {
                 )
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/user/**").permitAll()
-                        .requestMatchers("/api/user/delete-member", "/api/user/{username}/**").authenticated()
+                        // ✅ Swagger / OpenAPI 문서 경로 허용
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/actuator/health"
+                        ).permitAll()
+
+                        // ✅ 로그인·OAuth 진입점은 공개
+                        .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+
+                        // ✅ 관리자 전용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().permitAll()
+
+                        // ✅ 사용자 API는 인증 필요(변경)
+                        //   주의: Security의 .requestMatchers는 {username} 같은 변수를 해석하지 않음.
+                        //   필요 시 그냥 "/api/user/**"로 두거나, MvcRequestMatcher를 사용하세요.
+                        .requestMatchers("/api/user/delete-member").authenticated()
+                        .requestMatchers("/api/user/**").authenticated()
+
+                        // ✅ 그 외 전부 인증 필요(기존의 anyRequest().permitAll()은 보안상 위험)
+                        .anyRequest().authenticated()
                 )
-                // ✅ 여기서 Provider를 등록하면 내부적으로 PasswordEncoder.matches() 사용
+                // 인증 프로바이더
                 .authenticationProvider(authenticationProvider)
-                // JWT 필터는 UsernamePasswordAuthenticationFilter 이전에 배치
+                // JWT 필터를 UsernamePasswordAuthenticationFilter 이전에 배치
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     // ✅ DaoAuthenticationProvider: UserDetailsService + PasswordEncoder 연결
     @Bean
