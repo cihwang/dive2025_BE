@@ -23,7 +23,7 @@
 
     <select id="getTransferByFromShelterId"
             resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
-        SELECT tr.id, tr.rescued_id, sh1.username AS fromShelterName, sh2.username AS toShelterName, tr.request_status, tr.created_at, tr.updated_at
+        SELECT tr.id, tr.rescued_id, sh1.username AS from_shelter_name, sh2.username AS to_shelter_name, sh1.latitude AS from_shelter_latitude, sh1.longitude AS from_shelter_longitude,  tr.request_status, tr.created_at, tr.updated_at
         FROM transfer_request tr
         JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
         JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
