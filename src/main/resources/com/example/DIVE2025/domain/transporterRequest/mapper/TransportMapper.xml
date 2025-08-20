@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.transporterRequest.mapper.TransportMapper">
+
+    <insert id="saveTransportRequest">
+        INSERT INTO transporter_request(transfer_request_id, transporter_id, from_shelter_name, to_shelter_name, message)
+        VALUES(#{transferRequestId}, #{transporterId}, #{fromShelterName}, #{toShelterName}, #{message});
+    </insert>
+
+    <update id="updateTransportRequestStatus">
+        UPDATE transporter_request
+        SET tpr_decision_status = #{decisionStatus}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteTransportRequest">
+        DELETE FROM transporter_request
+        WHERE id = #{id}
+    </delete>
+
+    <select id="recommendTransportId"
+            resultType="com.example.DIVE2025.domain.transporterRequest.dto.RecommendTransporterResponseDto">
+        SELECT tp.id, tp.store_name, tp.tel, tp.addr,
+               (6371 * ACOS(
+                       COS(RADIANS( #{fromShelterLatitude}))
+                           * COS(RADIANS(tp.latitude))
+                           * COS(RADIANS(tp.longitude) - RADIANS( #{toShelterLongitude}))
+                           + SIN(RADIANS(#{fromShelterLatitude})) * SIN(RADIANS(tp.latitude))
+                       )) AS distance
+        FROM transporter tp
+        WHERE tp.longitude != #{toShelterLongitude}
+        ORDER BY distance
+        LIMIT 10;
+    </select>
+
+    <select id="findTransportRequestIdByTransferReqeustId"
+            resultType="com.example.DIVE2025.domain.transporterRequest.dto.FindResultDto">
+        SELECT tp.transfer_request_id
+        FROM transporter_request tp
+        WHERE tp.transfer_request_id = #{transferRequestId}
+    </select>
+
+
+</mapper>
