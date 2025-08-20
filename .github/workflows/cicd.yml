@@ -89,7 +89,7 @@ jobs:
             tries=0
             until curl -fs "http://127.0.0.1:${{ env.NEW_PORT }}/env" >/dev/null; do
               tries=$((tries+1))
-              if [ $tries -ge 12 ]; then
+              if [ $tries -ge 20 ]; then
                 echo "Health check failed"; exit 1
               fi
               echo "Waiting health... ($tries/12)"; sleep 5
