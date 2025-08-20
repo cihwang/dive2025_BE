@@ -16,6 +16,12 @@
         WHERE id = #{trRequestId};
     </update>
 
+    <update id="updateRequestStatusByTpr">
+        UPDATE transfer_request
+        SET request_status = #{requestStatus}
+        WHERE id = #{id}
+    </update>
+
     <delete id="deleteTransferRequest">
         DELETE FROM transfer_request
         WHERE id = #{id}
