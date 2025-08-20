@@ -1,6 +1,7 @@
 package com.example.DIVE2025.domain.rescued.service;
 
 
+import com.example.DIVE2025.domain.rescued.ai.SpecialMarkAiClient;
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiItemDto;
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiResponse;
 import com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto;
@@ -9,7 +10,6 @@ import com.example.DIVE2025.domain.rescued.enums.ProtectionStatus;
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
 import com.example.DIVE2025.domain.rescued.util.FileUploadUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,21 +39,28 @@ public class RescuedImportService {
     private final RestTemplate rest;
     private final ObjectMapper lenientObjectMapper;
     private final FileUploadUtil fileUploadUtil;
+    private final SpecialMarkAiClient specialMarkAiClient;
 
 
     @Value("${external.abandon.base-url}") private String baseUrl;
     @Value("${external.abandon.path}") private String path;
     @Value("${external.abandon.service-key}") private String serviceKey;
     @Value("${external.abandon.rows:1000}") private int rows;
+    @Value("${ai.analyzer.enabled:true}")
+    private boolean aiEnabled;
 
     private static final DateTimeFormatter API_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Autowired
-    public RescuedImportService(RescuedMapper rescuedMapper, RestTemplate rest, ObjectMapper lenientObjectMapper, FileUploadUtil fileUploadUtil) {
+    public RescuedImportService(RescuedMapper rescuedMapper, RestTemplate rest,
+                                ObjectMapper lenientObjectMapper,
+                                FileUploadUtil fileUploadUtil,
+                                SpecialMarkAiClient specialMarkAiClient) {
         this.rescuedMapper = rescuedMapper;
         this.rest = rest;
         this.lenientObjectMapper = lenientObjectMapper;
         this.fileUploadUtil = fileUploadUtil;
+        this.specialMarkAiClient = specialMarkAiClient;
     }
 
     /** 1) 초기 적재: 3년치 + 보호중만 */
@@ -139,6 +146,28 @@ public class RescuedImportService {
 
                 for (RescuedApiItemDto d : items) {
                     var e = d.toEntity();
+
+                    String specialMark = null;
+                    try{
+                        specialMark = d.getSpecialMark();
+                    }catch(Exception ignore){
+                        specialMark = null;
+                    }
+
+                    if (aiEnabled && e.getProtectionStatus() != ProtectionStatus.FINISHED) {
+                        try {
+                            var cond = specialMarkAiClient.analyze(specialMark);
+                            e.setAnimalCondition(cond != null ? cond : com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+                        } catch (Exception ex) {
+                            // 실패 시 안전 기본값
+                            e.setAnimalCondition(com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+                        }
+                    } else {
+                        // AI 비활성 또는 FINISHED면 NORMAL로 통일
+                        e.setAnimalCondition(com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+                    }
+
+
                     int n = (e.getProtectionStatus()==ProtectionStatus.FINISHED)
                             ? rescuedMapper.deleteByDesertionNo(e.getDesertionNo())
                             : rescuedMapper.upsert(e);

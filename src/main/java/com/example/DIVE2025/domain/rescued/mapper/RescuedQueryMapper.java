@@ -26,4 +26,17 @@ public interface RescuedQueryMapper {
 
     /** 특정 보호센터 내 지역구(care_reg_no)별 카운트 — DTO 없이 HashMap 리스트 */
     List<HashMap<String, Object>> countByShelterGroupByCareRegNo(@Param("shelterId") Long shelterId);
+
+
+    List<RescuedResponseDto> findTransferCandidates(
+            @Param("shelterId") Long shelterId,
+            @Param("usePeriod") boolean usePeriod,
+            @Param("dueWithinDays") int dueWithinDays, // 0=경과만, n=임박 포함
+            @Param("useSeverity") boolean useSeverity,
+            @Param("condition") String condition,
+            @Param("sort") String sort,
+            @Param("order") String order,
+            @Param("offset") int offset,
+            @Param("limit") int limit
+    );
 }
