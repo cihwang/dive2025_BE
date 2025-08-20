@@ -1,11 +1,11 @@
 package com.example.DIVE2025.domain.transferRequest.service;
 
 import com.example.DIVE2025.domain.transferRequest.Mapper.TransferMapper;
-import com.example.DIVE2025.domain.transferRequest.dto.TrSaveRequestDto;
-import com.example.DIVE2025.domain.transferRequest.dto.TrUpdateRequestDto;
-import com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto;
+import com.example.DIVE2025.domain.transferRequest.dto.*;
 import com.example.DIVE2025.domain.transferRequest.enums.RequestDecision;
 import com.example.DIVE2025.domain.transferRequest.enums.RequestStatus;
+import com.example.DIVE2025.domain.transporterRequest.enums.TprDecisionStatus;
+import com.example.DIVE2025.domain.transporterRequest.mapper.TransportMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +15,12 @@ import java.util.List;
 public class TransferService {
 
     private final TransferMapper transferMapper;
+    private final TransportMapper transportMapper;
 
     @Autowired
-    public TransferService(TransferMapper transferMapper) {
+    public TransferService(TransferMapper transferMapper, TransportMapper transportMapper) {
         this.transferMapper = transferMapper;
+        this.transportMapper = transportMapper;
     }
 
     /**
@@ -62,5 +64,26 @@ public class TransferService {
      */
     public List<TransferRequestResponseDto> getAllRequestsByToShelterId(Long shelterId) {
         return transferMapper.getTransferByToShelterId(shelterId);
+    }
+
+    public int updateTfrStatusByTpr(UpdateTfrStatusRequestByTprDto dto){
+        TprDecisionStatus curStatus = dto.getTprDecisionStatus();
+
+        if(curStatus.equals(TprDecisionStatus.ACCEPT)){
+            UpdateTfrStatusResponseByTprDto updateData = UpdateTfrStatusResponseByTprDto.builder()
+                    .id(dto.getId())
+                    .requestStatus(RequestStatus.TRANSPORTER_ACCEPTED)
+                    .build();
+
+            return transferMapper.updateRequestStatusByTpr(updateData);
+
+        }else if(curStatus.equals(TprDecisionStatus.REJECT)){
+            UpdateTfrStatusResponseByTprDto updateData = UpdateTfrStatusResponseByTprDto.builder()
+                    .id(dto.getId())
+                    .requestStatus(RequestStatus.TRANSPORTER_REJECTED)
+                    .build();
+
+            return transferMapper.updateRequestStatusByTpr(updateData);
+        }else return -1;
     }
 }

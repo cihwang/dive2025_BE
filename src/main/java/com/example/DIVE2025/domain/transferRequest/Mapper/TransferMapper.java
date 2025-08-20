@@ -1,8 +1,6 @@
 package com.example.DIVE2025.domain.transferRequest.Mapper;
 
-import com.example.DIVE2025.domain.transferRequest.dto.TrSaveRequestDto;
-import com.example.DIVE2025.domain.transferRequest.dto.TrUpdateRequestDto;
-import com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto;
+import com.example.DIVE2025.domain.transferRequest.dto.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,4 +24,5 @@ public interface TransferMapper {
     int deleteTransferRequest(@Param("id") Long id);
     int findTrRequestByRescuedId(@Param("rescuedId") Long rescuedId);
 
+    int updateRequestStatusByTpr(UpdateTfrStatusResponseByTprDto updateTfrStatusResponseByTprDto);
 }
