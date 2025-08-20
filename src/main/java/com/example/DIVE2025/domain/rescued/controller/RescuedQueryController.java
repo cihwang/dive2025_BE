@@ -55,7 +55,7 @@ public class RescuedQueryController {
      * 등록번호(careRegNo) 기준 총 마릿수 카운트
      * - 결과: { careRegNo, count }
      */
-    @GetMapping("/animals/countByCareRegNo/{careRegNo}")
+    @GetMapping("/animals/countByCareRegNo")
     public ResponseEntity<Map<String, Object>> countByCareRegNo(@RequestParam String careRegNo) {
         long count = rescuedQueryService.countByCareRegNo(careRegNo);
         return ResponseEntity.ok(Map.of("careRegNo", careRegNo, "count", count));
