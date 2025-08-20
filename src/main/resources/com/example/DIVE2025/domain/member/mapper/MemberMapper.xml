@@ -43,7 +43,6 @@
         FROM shelter
         WHERE id = #{id}
     </select>
-
     <!-- 신규 보호소 등록 -->
     <insert id="insert" parameterType="com.example.DIVE2025.domain.shelter.entity.Shelter" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO shelter (
