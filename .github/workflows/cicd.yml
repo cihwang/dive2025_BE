@@ -92,7 +92,7 @@ jobs:
               if [ $tries -ge 20 ]; then
                 echo "Health check failed"; exit 1
               fi
-              echo "Waiting health... ($tries/12)"; sleep 5
+              echo "Waiting health... ($tries/20)"; sleep 5
             done
             echo "New ${{ env.TARGET_UPSTREAM }} is healthy."
 
