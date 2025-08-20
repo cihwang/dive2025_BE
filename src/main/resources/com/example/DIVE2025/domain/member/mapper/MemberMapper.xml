@@ -5,31 +5,16 @@
 
 <mapper namespace="com.example.DIVE2025.domain.member.mapper.MemberMapper">
 
-    <!-- username 중복 체크 -->
+    <!-- ✅ username 중복체크: shelter + transporter 합계 -->
     <select id="countByUsername" parameterType="string" resultType="int">
-        SELECT COUNT(*)
-        FROM shelter
-        WHERE username = #{username}
+        SELECT
+            (SELECT COUNT(1) FROM shelter     WHERE username = #{username})
+                + (SELECT COUNT(1) FROM transporter WHERE username = #{username})
     </select>
 
-    <!-- username으로 보호소 조회 -->
-    <select id="findByUsername" parameterType="string" resultType="com.example.DIVE2025.domain.shelter.entity.Shelter">
-        SELECT
-            id,
-            username,
-            password,
-            description,
-            tel,
-            addr,
-            latitude,
-            longitude,
-            shelter_feature AS shelterFeature
-        FROM shelter
-        WHERE username = #{username}
-    </select>
 
     <!-- PK(id)로 보호소 조회 -->
-    <select id="findById" parameterType="long" resultType="com.example.DIVE2025.domain.shelter.entity.Shelter">
+    <select id="findShelterById" parameterType="long" resultType="com.example.DIVE2025.domain.shelter.entity.Shelter">
         SELECT
             id,
             username,
@@ -43,6 +28,27 @@
         FROM shelter
         WHERE id = #{id}
     </select>
+
+<!--    ID로 운송자 조회-->
+    <select id="findTransporterById" parameterType="long"
+            resultType="com.example.DIVE2025.domain.transporterRequest.entity.Transporter">
+        SELECT
+        id,
+        username,
+        password,
+        role,
+        store_name AS storeName,
+        tel,
+        addr,
+        latitude,
+        longitude,
+        created_at AS createdAt
+        FROM transporter           <!-- 테이블명이 mover면 mover 로 변경 -->
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+
     <!-- 신규 보호소 등록 -->
     <insert id="insert" parameterType="com.example.DIVE2025.domain.shelter.entity.Shelter" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO shelter (
@@ -65,5 +71,39 @@
                      #{shelterFeature}
                  )
     </insert>
+
+    <!-- username으로 보호소 조회 -->
+    <select id="findShelterByUsername" parameterType="string" resultType="com.example.DIVE2025.domain.shelter.entity.Shelter">
+        SELECT
+            id,
+            username,
+            password,
+            description,
+            tel,
+            addr,
+            latitude,
+            longitude,
+            shelter_feature AS shelterFeature,
+            role
+        FROM shelter
+        WHERE username = #{username}
+    </select>
+
+    <!-- username으로 운송자 조회 -->
+    <select id="findTransporterByUsername" parameterType="string" resultType="com.example.DIVE2025.domain.transporterRequest.entity.Transporter">
+        SELECT
+            id,
+            username,
+            password,
+            role,
+            store_name AS storeName,
+            tel,
+            addr,
+            latitude,
+            longitude,
+            created_at AS createAt
+        FROM transporter
+        WHERE username = #{username}
+    </select>
 
 </mapper>

@@ -36,22 +36,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        System.out.println(">>> FILTER path = " + request.getServletPath());
 
         try {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 String token = resolveToken(request);
 
                 if (token != null && jwtTokenProvider.validateToken(token)) {
-                    // ✅ 토큰에서 username / shelterId 추출
+                    // ✅ 토큰에서 username/role/stype/sid 추출 (기존 스타일 유지)
                     String username = jwtTokenProvider.getUsernameFromToken(token);
-                    Long shelterId = jwtTokenProvider.getShelterIdFromToken(token);
+                    String role     = jwtTokenProvider.getRoleFromToken(token);     // ex) ROLE_SHELTER
+                    String stype    = jwtTokenProvider.getStypeFromToken(token);    // SHELTER | TRANSPORTER
+                    Long   sid      = jwtTokenProvider.getSidFromToken(token);      // shelterId or transporterId
 
-                    // ✅ CustomUserDetails 생성
-                    CustomUserDetails userDetails = new CustomUserDetails(username, shelterId);
+                    // ✅ CustomUserDetails 생성 (토큰 정보만으로 복원)
+                    CustomUserDetails userDetails =
+                            CustomUserDetails.fromTokenClaims(username, sid, stype, role);
 
-                    // ✅ Authentication 객체 생성
+                    // ✅ Authentication 생성 (권한은 userDetails.getAuthorities() 사용)
                     Authentication authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

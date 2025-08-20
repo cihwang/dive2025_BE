@@ -21,4 +21,5 @@ public class Shelter {
     private ShelterFeature shelterFeature;
     private String addr;
     private LocalDateTime createdAt;
+    private String role;
 }

@@ -28,46 +28,30 @@ public class JwtTokenProvider {
         }
     }
 
-    /** ✅ Authentication에서 username + shelterId 추출해 JWT 생성 */
+    /** ✅ 로그인 성공 후 JWT 생성: username + role + stype + sid 포함 */
     public String generateToken(Authentication authentication) {
         initKey();
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomUserDetails u = (CustomUserDetails) authentication.getPrincipal();
+
+        String stype = (u.getStype() != null) ? u.getStype() : "SHELTER"; // "SHELTER"|"TRANSPORTER"
+        Long sid = "SHELTER".equals(stype) ? u.getShelterId() : u.getTransporterId();
 
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date exp = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())   // username
-                .claim("shelterId", userDetails.getShelterId()) // shelterId claim 추가
+                .setSubject(u.getUsername())     // username
+                .claim("role",  u.getRole())     // 예: ROLE_SHELTER / ROLE_TRANSPORTER
+                .claim("stype", stype)           // SHELTER / TRANSPORTER
+                .claim("sid",   sid)             // 주체 id (shelterId 또는 transporterId)
                 .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(key)
+                .setExpiration(exp)
+                .signWith(key)                   // 네가 쓰던 스타일 유지
                 .compact();
     }
 
-    /** JWT에서 shelterId 추출 */
-    public Long getShelterIdFromToken(String token) {
-        initKey();
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.get("shelterId", Long.class);
-    }
 
-    /** JWT에서 username(subject) 추출 */
-    public String getUsernameFromToken(String token) {
-        initKey();
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
-
-    /** 토큰 검증 */
+    /** ✅ 토큰 검증 */
     public boolean validateToken(String token) {
         try {
             initKey();
@@ -77,5 +61,45 @@ public class JwtTokenProvider {
             System.out.println("JWT 검증 실패: " + e.getMessage());
             return false;
         }
+    }
+
+    /** ✅ Claims 공통 파서 */
+    private Claims parseClaims(String token) {
+        initKey();
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    /** username(subject) 추출 */
+    public String getUsernameFromToken(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    /** (호환용) SHELTER일 때만 shelterId 반환 */
+    public Long getShelterIdFromToken(String token) {
+        Claims c = parseClaims(token);
+        String stype = c.get("stype", String.class);
+        Number n = c.get("sid", Number.class);
+        if ("SHELTER".equalsIgnoreCase(stype) && n != null) return n.longValue();
+        return null;
+    }
+
+    /** role 추출 (예: ROLE_SHELTER) */
+    public String getRoleFromToken(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
+    /** stype 추출 (SHELTER | TRANSPORTER) */
+    public String getStypeFromToken(String token) {
+        return parseClaims(token).get("stype", String.class);
+    }
+
+    /** sid 추출 (shelterId 또는 transporterId) */
+    public Long getSidFromToken(String token) {
+        Number n = parseClaims(token).get("sid", Number.class);
+        return (n == null) ? null : n.longValue();
     }
 }
