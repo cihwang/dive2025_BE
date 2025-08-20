@@ -21,12 +21,13 @@ public class SecurityController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
-    /**
-     * 보호소 로그인
-     */
+
+
+    /** 로그인 */
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDTO> login(@RequestBody UserLoginRequestDTO loginRequest) {
-        log.info("로그인 요청 - 보호소 username: {}", loginRequest.getUsername());
+        System.out.println(">>>>>>HIT api/auth/login");
+        log.info("로그인 요청 - username: {}", loginRequest.getUsername());
 
         // 사용자 인증 처리
         Authentication authentication = authenticationManager.authenticate(
@@ -36,21 +37,31 @@ public class SecurityController {
         // 인증 정보 SecurityContext에 저장
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // JWT 토큰 생성
+        // JWT 토큰 생성 (role/stype/sid 포함)
         String token = jwtTokenProvider.generateToken(authentication);
 
-        // 인증된 사용자 정보 가져오기
+        // 인증된 사용자 정보
         CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        log.info("principal role={}, stype={}, shelterId={}, transporterId={}",
+                principal.getRole(), principal.getStype(), principal.getShelterId(), principal.getTransporterId());
 
-        // 응답 생성 (보호소 정보 + 토큰)
+        String stype = principal.getStype(); // "SHELTER" | "TRANSPORTER"
+        Long sid = "SHELTER".equals(stype) ? principal.getShelterId() : principal.getTransporterId();
+        log.info("computed stype={}, sid={}", stype, sid);
+
         UserLoginResponseDTO response = UserLoginResponseDTO.builder()
                 .token(token)
-                .shelterId(principal.getShelterId())
                 .username(principal.getUsername())
+                .role(principal.getRole())
+                .stype(stype)
+                .sid(sid)
+                .shelterId("SHELTER".equals(stype) ? sid : null)         // 보호소 로그인일 때
+                .transporterId("TRANSPORTER".equals(stype) ? sid : null) // 운송업자 로그인일 때
                 .build();
 
         return ResponseEntity.ok(response);
     }
+
 
     /**
      * 로그아웃

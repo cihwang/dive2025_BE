@@ -33,6 +33,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                /* ✅ 기본 로그인/베이직/로그아웃 기능 끄기 */
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .logout(lo -> lo.disable())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
@@ -46,23 +50,18 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
-                                "/actuator/health",
-                                "/api/auth/**"             // 로그인/토큰 발급 등
+                                "/api/auth/**",            // 로그인/토큰 발급 등
+                                "/"
                         ).permitAll()
-
                         // 관리자 전용
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        //role 개발 후 주석 풀것
-//                        .requestMatchers("/api/shelter/**", "/api/rescued/**").hasRole("SHELTER")
-//                        .requestMatchers("/api/mover/**", "/api/transport/**").hasRole("TRANSPORTER")
-//                        .requestMatchers("/api/common/**").hasAnyRole("SHELTER","TRANSPORTER")
-
-
+                        .requestMatchers("/api/shelter/**", "/api/rescued/**").hasRole("SHELTER")
+                        .requestMatchers("/api/transport/**").hasRole("TRANSPORTER")
                         .requestMatchers("/api/**").authenticated()
 
-                        // 그 외 모두 인증 필요
-                        .anyRequest().authenticated()
+                        // 그 외 모두 인증 필요x
+                        .anyRequest().permitAll()
                 )
 
                 // ⚠️ AuthenticationProvider는 자동 구성에 맡김(수동 등록 금지)

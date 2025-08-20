@@ -25,20 +25,29 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException {
-        // 인증된 사용자 정보
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
 
-        // JWT 토큰 생성 (username + shelterId 포함됨)
+        // JWT 토큰 생성
         String token = jwtTokenProvider.generateToken(authentication);
+
+        // stype/sid 계산
+        String stype = principal.getStype(); // SHELTER | TRANSPORTER
+        Long sid = "SHELTER".equals(stype) ? principal.getShelterId() : principal.getTransporterId();
 
         // 응답 DTO 작성
         UserLoginResponseDTO result = UserLoginResponseDTO.builder()
                 .token(token)
-                .shelterId(userDetails.getShelterId())
-                .username(userDetails.getUsername())
+                .username(principal.getUsername())
+                .role(principal.getRole())
+                .stype(stype)
+                .sid(sid)
+                .shelterId("SHELTER".equals(stype) ? sid : null)
+                .transporterId("TRANSPORTER".equals(stype) ? sid : null)
+                .latitude(principal.getLatitude())
+                .longitude(principal.getLongitude())
                 .build();
 
-        // JSON 응답 전송
+        // JSON 응답
         JsonResponse.send(response, result);
     }
 }
