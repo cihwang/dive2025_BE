@@ -32,7 +32,7 @@ WHERE
     s.longitude !=  128.9167344
     AND (sc.total_capacity - sc.cur_capacity) > 0
     /* MILD(1) > shelter_rank 조건 */
-    AND shelter_rank <= animal_rank
+    AND (FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') - 1) >= (FIELD('SEVERE', 'NORMAL','MILD','SEVERE') - 1)
 ORDER BY
     distance ASC,
     shelter_rank DESC;

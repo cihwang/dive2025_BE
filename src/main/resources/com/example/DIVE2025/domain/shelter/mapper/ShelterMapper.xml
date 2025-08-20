@@ -32,8 +32,8 @@
         WHERE
             s.longitude != #{longitude} AND
             (sc.total_capacity - sc.cur_capacity) > 0 AND
-            FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') &lt;= FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')
-        ORDER BY distance, shelterRank DESC
+            FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') &gt;= FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')
+        ORDER BY shelterRank, remainCapacity DESC, distance
     </select>
 
 
