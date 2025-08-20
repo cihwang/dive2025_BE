@@ -16,6 +16,10 @@ public class RescuedResponseDto {
     private Long shelterId;
     private String shelterName;     // shelter.description
     private String shelterFeature;  // 병원/일반 구분 등
+    private Double latitude;
+    private Double longitude;
+    private String shelterTel;
+    private String shelterAddr;
 
     // 동물 기본
     private String upkindNm;

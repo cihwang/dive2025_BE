@@ -71,8 +71,11 @@
         /* 보호소 정보 */
         r.shelter_id                   AS shelterId,
         s.description                  AS shelterName,
-        /* 필요 시 컬럼명 맞춰 수정: s.feature / s.is_hospital 등 */
-        NULL                      AS shelterFeature,
+        s.shelter_feature              AS shelterFeature,
+        s.latitude                     AS latitude,
+        s.longitude                    AS longitude,
+        s.tel                          AS shelterTel,
+        s.addr                         AS shelterAddr,
 
         /* 동물 기본 */
         r.up_kind_nm                   AS upkindNm,
@@ -95,38 +98,63 @@
         r.popfile1                     AS popfile1,
         r.popfile2                     AS popfile2,
 
-        /* 공통 계산 필드 */
-        DATEDIFF(CURDATE(), r.happen_dt)                            AS daysProtected,
-        CASE WHEN DATEDIFF(CURDATE(), r.happen_dt) &gt; 10 THEN TRUE ELSE FALSE END AS overdue,
+        /* 공통 계산 필드 (일관화: happen_dt 없으면 rescue_date 사용) */
+        DATEDIFF(CURDATE(), COALESCE(r.happen_dt, r.rescue_date)) AS daysProtected,
+        CASE WHEN DATEDIFF(CURDATE(), COALESCE(r.happen_dt, r.rescue_date)) > 10
+        THEN TRUE ELSE FALSE END                           AS overdue,
         /* 2번 기능에서 Service가 채울 예정 (지금은 null) */
         NULL                           AS needsTransfer
 
         FROM rescued r
         JOIN shelter s ON s.id = r.shelter_id
+
         <include refid="COMMON_WHERE"/>
 
-        <!-- 정렬: 기본 rescue_date, 대안 happen_dt -->
+        <!-- 정렬: 기본 rescue_date, 대안 happen_dt/age/weight(숫자 의미 정렬) -->
         <choose>
-            <when test="q.sort != null and q.sort == 'happenDt'">
+            <when test="q.sort == 'happenDt'">
                 ORDER BY r.happen_dt
             </when>
+
+            <!-- age: "8살 3개월", "2살", "11개월" → 총 개월 수로 정렬 + 숫자 못 뽑은 행은 뒤로 -->
+            <when test="q.sort == 'age'">
+                <![CDATA[
+          ORDER BY
+            (
+              REGEXP_SUBSTR(r.age, '(\d+)\s*(?:살|세|년|y|yr|yrs|years)') IS NULL
+              AND REGEXP_SUBSTR(r.age, '(\d+)\s*(?:개월|달|mo|mos|month|months)') IS NULL
+            ),
+            (
+              COALESCE(CAST(REGEXP_SUBSTR(r.age, '(\d+)\s*(?:살|세|년|y|yr|yrs|years)') AS UNSIGNED), 0) * 12 +
+              COALESCE(CAST(REGEXP_SUBSTR(r.age, '(\d+)\s*(?:개월|달|mo|mos|month|months)') AS UNSIGNED), 0)
+            )
+        ]]>
+            </when>
+
+            <!-- weight: "약 6.5kg", "7 kg" 등 → 숫자만 추출해 정렬 + 숫자 못 뽑은 행은 뒤로 -->
+            <when test="q.sort == 'weight'">
+                <![CDATA[
+          ORDER BY
+            CAST(REGEXP_SUBSTR(LOWER(r.weight), '[0-9]+(\.[0-9]+)?') AS DECIMAL(10,2)) IS NULL,
+            CAST(REGEXP_SUBSTR(LOWER(r.weight), '[0-9]+(\.[0-9]+)?') AS DECIMAL(10,2))
+        ]]>
+            </when>
+
             <otherwise>
                 ORDER BY r.rescue_date
             </otherwise>
         </choose>
 
+        <!-- 정렬 방향: ASC/ DESC (위에서 마지막 키에만 적용됨) -->
         <choose>
-            <when test="q.order != null and (q.order == 'asc' or q.order == 'ASC')">
-                ASC
-            </when>
-            <otherwise>
-                DESC
-            </otherwise>
+            <when test="q.order != null and (q.order == 'asc' or q.order == 'ASC')"> ASC </when>
+            <otherwise> DESC </otherwise>
         </choose>
 
         LIMIT #{q.size}
         OFFSET #{offset}
     </select>
+
 
     <!-- 카운트: PK 기준 -->
     <select id="countByShelter" resultType="long">
@@ -157,6 +185,142 @@
         WHERE r.shelter_id = #{shelterId}
         GROUP BY r.care_reg_no
         ORDER BY r.care_reg_no
+    </select>
+
+
+    <select id="findTransferCandidates"
+            resultType="com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto">
+
+        SELECT
+        /* 기본 식별 */
+        r.id                           AS id,
+        r.desertion_no                 AS desertionNo,
+
+        /* 보호소 정보 */
+        r.shelter_id                   AS shelterId,
+        s.description                  AS shelterName,
+        s.shelter_feature              AS shelterFeature,
+        s.latitude                     AS latitude,
+        s.longitude                    AS longitude,
+        s.tel                          AS shelterTel,
+        s.addr                         AS shelterAddr,
+
+        /* 동물 기본 */
+        r.up_kind_nm                   AS upkindNm,
+        r.kind_nm                      AS kindNm,
+        r.age                          AS age,
+        r.weight                       AS weight,
+        r.sex                          AS sex,
+        r.neuter_yn                    AS neuterYn,
+
+        /* 상태/일자 */
+        r.protection_status            AS protectionStatus,
+        r.happen_dt                    AS happenDt,
+        r.rescue_date                  AS rescueDate,
+        r.move_date                    AS moveDate,
+        r.protect_end_date             AS protectEndDate,
+
+        /* 기타 */
+        r.care_reg_no                  AS careRegNo,
+        r.rfid_cd                      AS rfidCd,
+        r.popfile1                     AS popfile1,
+        r.popfile2                     AS popfile2,
+
+        /* 공통 계산 필드(조회용) */
+        DATEDIFF(CURRENT_DATE, COALESCE(r.happen_dt, r.rescue_date)) AS daysProtected,
+        CASE
+        WHEN DATEDIFF(CURRENT_DATE, COALESCE(r.happen_dt, r.rescue_date)) > 10
+        THEN TRUE ELSE FALSE
+        END AS overdue,
+        CASE
+        WHEN (r.animal_condition = 'MILD' AND s.shelter_feature = 'GENERAL')
+        OR (r.animal_condition = 'SEVERE' AND (s.shelter_feature = 'GENERAL' OR s.shelter_feature = 'VET'))
+        THEN TRUE ELSE FALSE
+        END AS needsTransfer
+
+        FROM rescued r
+        JOIN shelter s ON s.id = r.shelter_id
+
+        <where>
+            r.shelter_id = #{shelterId}
+            AND r.protection_status = 'PROTECTED'
+            AND r.animal_condition IN ('MILD','SEVERE')   <!-- NORMAL 제외 -->
+
+            <!-- B: 중증 & 보호소 특성 조건 -->
+            <if test="useSeverity">
+                AND (
+                (r.animal_condition = 'MILD' AND s.shelter_feature = 'GENERAL')
+                OR
+                (r.animal_condition = 'SEVERE' AND (s.shelter_feature = 'GENERAL' OR s.shelter_feature = 'VET'))
+                )
+            </if>
+
+            <!-- A: 보호기간 임박/경과 -->
+            <if test="usePeriod">
+                <![CDATA[
+        AND COALESCE(r.protect_end_date,
+                     DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
+        <= DATE_ADD(CURRENT_DATE, INTERVAL #{dueWithinDays} DAY)
+      ]]>
+            </if>
+
+            <!-- 상태별 필터 -->
+            <if test="condition != null &amp;&amp; condition != 'ALL'">
+                AND r.animal_condition = #{condition}
+            </if>
+        </where>
+
+        <!-- 동적 정렬: 허용된 sort면 단일 정렬(+방향), 아니면 기본 복합 정렬 유지 -->
+        <choose>
+            <when test="sort != null and (sort == 'overdue' or sort == 'daysProtected' or sort == 'happenDt' or sort == 'rescueDate' or sort == 'age' or sort == 'weight')">
+                <choose>
+                    <when test="sort == 'overdue'">        ORDER BY overdue        </when>
+                    <when test="sort == 'daysProtected'">  ORDER BY daysProtected  </when>
+                    <when test="sort == 'happenDt'">       ORDER BY r.happen_dt    </when>
+                    <when test="sort == 'rescueDate'">     ORDER BY r.rescue_date  </when>
+
+                    <!-- age: "8살 3개월", "2살", "11개월" 등을 총 개월 수로 환산 -->
+                    <when test="sort == 'age'">
+                        <![CDATA[
+            ORDER BY
+              (
+                REGEXP_SUBSTR(r.age, '(\\d+)\\s*(?:살|세|년|y|yr|yrs|years)') IS NULL
+                AND REGEXP_SUBSTR(r.age, '(\\d+)\\s*(?:개월|달|mo|mos|month|months)') IS NULL
+              ),
+              (
+                COALESCE(CAST(REGEXP_SUBSTR(r.age, '(\\d+)\\s*(?:살|세|년|y|yr|yrs|years)') AS UNSIGNED), 0) * 12 +
+                COALESCE(CAST(REGEXP_SUBSTR(r.age, '(\\d+)\\s*(?:개월|달|mo|mos|month|months)') AS UNSIGNED), 0)
+              )
+          ]]>
+                    </when>
+
+                    <!-- weight: "7kg", "약 6.5 kg" 등에서 숫자만 추출 -->
+                    <when test="sort == 'weight'">
+                        <![CDATA[
+            ORDER BY
+              CAST(REGEXP_SUBSTR(LOWER(r.weight), '[0-9]+(\\.[0-9]+)?') AS DECIMAL(10,2)) IS NULL,
+              CAST(REGEXP_SUBSTR(LOWER(r.weight), '[0-9]+(\\.[0-9]+)?') AS DECIMAL(10,2))
+          ]]>
+                    </when>
+                </choose>
+
+                <!-- 방향 적용: 허용 sort일 때만 붙임 -->
+                <choose>
+                    <when test="order != null and (order == 'asc' or order == 'ASC')"> ASC </when>
+                    <otherwise> DESC </otherwise>
+                </choose>
+            </when>
+
+            <!-- sort가 없거나 허용 외 값이면: 기본 복합 정렬 유지 -->
+            <otherwise>
+                ORDER BY
+                overdue DESC,
+                daysProtected DESC,
+                COALESCE(r.happen_dt, r.rescue_date) ASC
+            </otherwise>
+        </choose>
+
+        LIMIT #{limit} OFFSET #{offset}
     </select>
 
 </mapper>
