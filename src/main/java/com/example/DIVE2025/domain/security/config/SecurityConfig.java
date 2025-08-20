@@ -51,11 +51,15 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // 관리자 전용
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // 사용자 보호 API
-                        .requestMatchers("/api/user/delete-member").authenticated()
-                        .requestMatchers("/api/user/**").authenticated()
+                        //role 개발 후 주석 풀것
+//                        .requestMatchers("/api/shelter/**", "/api/rescued/**").hasRole("SHELTER")
+//                        .requestMatchers("/api/mover/**", "/api/transport/**").hasRole("TRANSPORTER")
+//                        .requestMatchers("/api/common/**").hasAnyRole("SHELTER","TRANSPORTER")
+
+
+                        .requestMatchers("/api/**").authenticated()
 
                         // 그 외 모두 인증 필요
                         .anyRequest().authenticated()
