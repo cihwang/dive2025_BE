@@ -6,30 +6,36 @@
 <mapper namespace="com.example.DIVE2025.domain.shelter.mapper.ShelterMapper">
 
     <select id="recommendedShelterId" resultType="com.example.DIVE2025.domain.shelter.dto.RecommendResponseDto">
-        SELECT s.id, s.username, s.description,
-               (    6371 * acos(
-                    cos(radians(#{latitude}))
-                        * cos(radians(s.latitude))
-                        * cos(radians(s.longitude) - radians(#{longitude}))
-                    + sin(radians(#{latitude})) * sin(radians(s.latitude))
-                )) AS distance,
-            (sc.total_capacity - sc.cur_capacity) AS remain_capacity,
-            CASE WHEN s.shelter_feature = #{animalCondition} THEN 0 ELSE 1 END AS match_priority
+        SELECT
+        s.id,
+        s.username,
+        s.description,
+        (6371 * ACOS(
+            COS(RADIANS( #{latitude}))
+                * COS(RADIANS(s.latitude))
+                * COS(RADIANS(s.longitude) - RADIANS( #{longitude}))
+                + SIN(RADIANS(#{latitude})) * SIN(RADIANS(s.latitude))
+            )) AS distance,
+        (sc.total_capacity - sc.cur_capacity) AS remainCapacity,
+        FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') AS shelterRank,
+        FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')  AS animalRank
         FROM shelter s
         JOIN (
             SELECT sc1.shelter_id, sc1.total_capacity, sc1.cur_capacity
             FROM shelter_capacity sc1
             WHERE sc1.updated_at = (
-                    SELECT MAX(sc2.updated_at)
-                    FROM shelter_capacity sc2
-                    WHERE sc1.shelter_id = sc2.shelter_id
-                )
-        ) AS sc
-        ON s.id = sc.shelter_id
-        WHERE #{s.latitude} != latitude AND
-             (sc.total_capacity - sc.cur_capacity) > 0
-        ORDER BY match_priority ASC, distance ASC
+                SELECT MAX(sc2.updated_at)
+                FROM shelter_capacity sc2
+                WHERE sc2.shelter_id = sc1.shelter_id
+            )
+        ) sc ON sc.shelter_id = s.id
+        WHERE
+            s.longitude != #{longitude} AND
+            (sc.total_capacity - sc.cur_capacity) > 0 AND
+            FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') &gt;= FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')
+        ORDER BY shelterRank, remainCapacity DESC, distance
     </select>
+
 
     <select id="getUsernameById"
             resultType="com.example.DIVE2025.domain.shelter.dto.GetUsernameResponseDto">

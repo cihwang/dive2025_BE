@@ -4,8 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum  ShelterFeature {
-
-    GENERAL,
-    VET,
-    HOSPITAL;
+    GENERAL, // 0
+    VET, // 1
+    HOSPITAL; // 2
 }

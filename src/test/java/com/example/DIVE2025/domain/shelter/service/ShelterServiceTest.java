@@ -25,12 +25,14 @@ class ShelterServiceTest {
     @Test
     void recommendShelter(){
         RecommendRequestDto rescued = RecommendRequestDto.builder()
-                .animalCondition(AnimalCondition.INJURED)
+                .animalCondition(AnimalCondition.SEVERE)
                 .latitude(35.151443)
                 .longitude(128.93962)
                 .build();
 
         List<RecommendResponseDto> shelterPriority = shelterService.findShelterPriority(rescued);
-        Assertions.assertThat(shelterPriority.size()).isEqualTo(5);
+        Assertions.assertThat(shelterPriority.size()).isEqualTo(3);
+
+        System.out.println(shelterPriority);
     }
 }
