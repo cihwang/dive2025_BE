@@ -79,19 +79,21 @@ public class RescuedImportService {
         List<String> regs = rescuedMapper.selectAllCareRegNos();
         int changed = 0;
         for (String reg : regs) {
-            changed += fetchAndApplyChunked(start, end, reg, null, 1); // 하루 단위 쪼개기
+            changed += fetchAndApplyChunked(start, end, reg, null, 5); // 5일 단위 쪼개기
         }
         log.info("Sync changed rows={}", changed);
         return changed;
     }
 
     /** 공통 fetch + 적용 (state가 null이면 파라미터 생략) */
+    /** 공통 fetch + 적용 (state가 null이면 파라미터 생략) */
     private int fetchAndApply(LocalDate start, LocalDate end, String careRegNo, String stateOrNull) {
         int affected = 0;
         int page = 1;
 
-        for (;;) {
-            String rawKey = serviceKey == null ? "" : serviceKey.trim();
+        while (true) {
+            // --- URI 구성 ---
+            String rawKey = (serviceKey == null) ? "" : serviceKey.trim();
             String encodedKey = URLEncoder.encode(rawKey, StandardCharsets.UTF_8);
 
             UriComponentsBuilder b = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
@@ -106,13 +108,14 @@ public class RescuedImportService {
             if (stateOrNull != null) b.queryParam("state", stateOrNull);
             URI uri = b.build(true).toUri();
 
-            boolean success = false;
+            boolean fetched = false;
             int retries = 0;
 
-            while (!success && retries < 3) {
+            // --- 재시도 루프 (최대 3번) ---
+            while (!fetched && retries < 3) {
                 try {
                     log.info("CALL {} (careRegNo={}, page={}, try={})",
-                            maskKey(uri.toString()), careRegNo, page, retries+1);
+                            maskKey(uri.toString()), careRegNo, page, retries + 1);
 
                     var headers = new HttpHeaders();
                     headers.setAccept(List.of(MediaType.APPLICATION_JSON));
@@ -120,15 +123,28 @@ public class RescuedImportService {
 
                     var respEntity = rest.exchange(uri, HttpMethod.GET, req, String.class);
                     String raw = respEntity.getBody();
-                    if (raw == null || raw.isBlank()) { log.warn("Empty body"); break; }
-                    if (raw.startsWith("<")) { log.warn("Non-JSON response head={}", raw.substring(0,100)); break; }
+                    if (raw == null || raw.isBlank()) {
+                        log.warn("Empty body");
+                        return affected; // ❌ 데이터 없음 → 바로 종료
+                    }
+                    if (raw.startsWith("<")) {
+                        log.warn("Non-JSON response head={}", raw.substring(0, 100));
+                        return affected;
+                    }
 
+                    // --- 응답 파싱 ---
                     RescuedApiResponse api = lenientObjectMapper.readValue(raw, RescuedApiResponse.class);
-                    var respBody = (api!=null && api.getResponse()!=null) ? api.getResponse().getBody() : null;
-                    var items = (respBody!=null && respBody.getItems()!=null) ? respBody.getItems().getItem() : null;
-                    if (items == null || items.isEmpty()) { break; }
+                    var respBody = (api != null && api.getResponse() != null) ? api.getResponse().getBody() : null;
+                    var items = (respBody != null && respBody.getItems() != null)
+                            ? respBody.getItems().getItem() : null;
 
-                    // === DB 반영 ===
+                    // --- 아이템 없음 → 종료 ---
+                    if (items == null || items.isEmpty()) {
+                        log.info("No more items careRegNo={}, page={}", careRegNo, page);
+                        return affected;
+                    }
+
+                    // --- DB 반영 ---
                     for (RescuedApiItemDto d : items) {
                         var e = d.toEntity();
                         String specialMark = d.getSpecialMark();
@@ -159,27 +175,43 @@ public class RescuedImportService {
                         affected += n;
                     }
 
+                    // --- 페이지네이션 종료 조건 ---
                     int total = (respBody != null) ? respBody.getTotalCount() : 0;
-                    if (total == 0 || page * rows >= total) success = true;
-                    else page++;
+                    if (total == 0 || page * rows >= total) {
+                        log.info("Finished all pages careRegNo={}, total={}", careRegNo, total);
+                        return affected;
+                    }
+
+                    // 다음 페이지로 이동
+                    page++;
+                    fetched = true;
 
                 } catch (ResourceAccessException ex) {
                     retries++;
                     int backoff = (int) Math.pow(2, retries); // 2, 4, 8초
                     log.warn("Timeout careRegNo={}, page={}, retry {}/3 after {}s",
                             careRegNo, page, retries, backoff);
-                    try { Thread.sleep(backoff * 1000L); } catch (InterruptedException ignore) {}
+                    try {
+                        Thread.sleep(backoff * 1000L);
+                    } catch (InterruptedException ignore) {}
                 } catch (Exception ex) {
                     log.error("Fetch/apply failed careRegNo={}, page={}, uri={}",
                             careRegNo, page, maskKey(uri.toString()), ex);
-                    break;
+                    return affected;
                 }
             }
-            if (!success) break;
+
+            // 3번 재시도에도 실패 → 종료
+            if (!fetched) {
+                log.error("Failed after 3 retries careRegNo={}, page={}", careRegNo, page);
+                break;
+            }
         }
+
         log.info("Applied careRegNo={}, affected={}", careRegNo, affected);
         return affected;
     }
+
 
     /** serviceKey 마스킹 */
     private static String maskKey(String raw) {
