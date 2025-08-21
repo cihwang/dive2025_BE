@@ -26,8 +26,8 @@ public class RestClientConfig {
         // ✅ HttpClient 5는 Timeout 객체 필요
         RequestConfig reqConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofSeconds(5))        // 연결 타임아웃
-                .setConnectionRequestTimeout(Timeout.ofSeconds(2)) // 풀에서 가져오기 타임아웃
-                .setResponseTimeout(Timeout.ofSeconds(10))      // 응답 대기 타임아웃
+                .setConnectionRequestTimeout(Timeout.ofSeconds(5)) // 풀에서 가져오기 타임아웃
+                .setResponseTimeout(Timeout.ofSeconds(30))      // 응답 대기 타임아웃
                 .build();
 
         CloseableHttpClient httpClient = HttpClients.custom()
