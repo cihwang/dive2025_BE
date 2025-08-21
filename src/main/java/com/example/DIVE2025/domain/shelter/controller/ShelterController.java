@@ -2,6 +2,7 @@ package com.example.DIVE2025.domain.shelter.controller;
 
 import com.example.DIVE2025.domain.shelter.dto.RecommendRequestDto;
 import com.example.DIVE2025.domain.shelter.dto.RecommendResponseDto;
+import com.example.DIVE2025.domain.shelter.dto.ShelterListResponseDto;
 import com.example.DIVE2025.domain.shelter.service.ShelterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,5 +28,11 @@ public class ShelterController {
         List<RecommendResponseDto> shelterPriority = shelterService.findShelterPriority(recommendRequestDto);
         log.info("shelter priority: {}", shelterPriority);
         return ResponseEntity.ok(shelterPriority);
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<?> getAll() {
+        List<ShelterListResponseDto> allShelters = shelterService.getAllShelters();
+        return ResponseEntity.ok(allShelters);
     }
 }

@@ -42,4 +42,12 @@
         SELECT username FROM shelter WHERE id = #{id}
     </select>
 
+
+    <select id="getShelterList" resultType="com.example.DIVE2025.domain.shelter.dto.ShelterListResponseDto">
+        SELECT s.id, s.username, s.tel, s.latitude, s.longitude, s.addr, s.shelter_feature, sc.total_capacity, sc.cur_capacity
+        FROM shelter s
+        JOIN shelter_capacity sc
+        ON s.id = sc.shelter_id;
+    </select>
+
 </mapper>
