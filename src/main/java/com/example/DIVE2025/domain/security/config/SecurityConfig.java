@@ -61,8 +61,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/transport/**").hasRole("TRANSPORTER")
                         .requestMatchers("/api/**").authenticated()
 
-                        // 그 외 모두 인증 필요x
-                        .anyRequest().permitAll()
+                        // 그 외 모두 인증 필요O
+                        .anyRequest().authenticated()
                 )
 
                 // ⚠️ AuthenticationProvider는 자동 구성에 맡김(수동 등록 금지)
