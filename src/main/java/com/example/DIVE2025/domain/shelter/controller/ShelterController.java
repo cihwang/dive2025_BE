@@ -30,7 +30,7 @@ public class ShelterController {
         return ResponseEntity.ok(shelterPriority);
     }
 
-    @GetMapping("/getAll")
+    @GetMapping("/get-all")
     public ResponseEntity<?> getAll() {
         List<ShelterListResponseDto> allShelters = shelterService.getAllShelters();
         return ResponseEntity.ok(allShelters);
