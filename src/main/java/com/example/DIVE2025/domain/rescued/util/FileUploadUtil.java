@@ -46,7 +46,7 @@ public class FileUploadUtil {
                 return;
             }
 
-            String key = "shelter" + shelterId + "/" + desertionNo + ".jpg";
+            String key = "images/shelter" + shelterId + "/" + desertionNo + ".jpg";
             ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
 
             ObjectMetadata metadata = new ObjectMetadata();
