@@ -1,9 +1,6 @@
 package com.example.DIVE2025.domain.transporterRequest.controller;
 
-import com.example.DIVE2025.domain.transporterRequest.dto.RecommendTransporterRequestDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.RecommendTransporterResponseDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.TransportRequestSaveDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.UpdateTprRequestDto;
+import com.example.DIVE2025.domain.transporterRequest.dto.*;
 import com.example.DIVE2025.domain.transporterRequest.service.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -44,5 +41,11 @@ public class TransportController {
     public ResponseEntity<?> deleteTransportRequest(@RequestParam Long id) {
         int i = transportService.deleteTransportRequest(id);
         return ResponseEntity.ok(i);
+    }
+
+    @GetMapping("/get-all")
+    public ResponseEntity<?> getAllTransportRequest(@RequestParam Long id) {
+        List<TprListResponseDto> allRequestsByTransporterId = transportService.getAllRequestsByTransporterId(id);
+        return ResponseEntity.ok(allRequestsByTransporterId);
     }
 }
