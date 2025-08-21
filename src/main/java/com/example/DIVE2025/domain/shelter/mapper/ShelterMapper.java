@@ -4,6 +4,7 @@ import com.example.DIVE2025.domain.rescued.enums.AnimalCondition;
 import com.example.DIVE2025.domain.shelter.dto.GetUsernameResponseDto;
 import com.example.DIVE2025.domain.shelter.dto.RecommendResponseDto;
 import com.example.DIVE2025.domain.shelter.dto.GetUsernameRequestDto;
+import com.example.DIVE2025.domain.shelter.dto.ShelterListResponseDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -21,4 +22,6 @@ public interface ShelterMapper {
             @Param("longitude") Double longitude);
 
     GetUsernameResponseDto getUsernameById(GetUsernameRequestDto getUsernameVO);
+
+    List<ShelterListResponseDto> getShelterList();
 }
