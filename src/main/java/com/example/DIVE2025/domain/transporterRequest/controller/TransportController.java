@@ -38,7 +38,7 @@ public class TransportController {
     }
 
     @PostMapping("/delete")
-    public ResponseEntity<?> deleteTransportRequest(@RequestParam Long id) {
+    public ResponseEntity<?> deleteTransportRequest(@RequestParam("id") Long id) {
         int i = transportService.deleteTransportRequest(id);
         return ResponseEntity.ok(i);
     }

@@ -10,6 +10,7 @@
         s.id,
         s.username,
         s.description,
+        s.shelter_feature,
         (6371 * ACOS(
             COS(RADIANS( #{latitude}))
                 * COS(RADIANS(s.latitude))
