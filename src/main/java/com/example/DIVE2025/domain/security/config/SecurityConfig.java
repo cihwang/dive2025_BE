@@ -51,6 +51,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
                                 "/api/auth/**",            // 로그인/토큰 발급 등
+                                "/api/shelter/get-all",     //전체 보호센터 목록 불러오기
                                 "/"
                         ).permitAll()
                         // 관리자 전용
