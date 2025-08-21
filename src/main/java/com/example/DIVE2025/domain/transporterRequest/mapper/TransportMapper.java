@@ -1,9 +1,6 @@
 package com.example.DIVE2025.domain.transporterRequest.mapper;
 
-import com.example.DIVE2025.domain.transporterRequest.dto.FindResultDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.RecommendTransporterRequestDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.RecommendTransporterResponseDto;
-import com.example.DIVE2025.domain.transporterRequest.dto.UpdateTprRequestDto;
+import com.example.DIVE2025.domain.transporterRequest.dto.*;
 import com.example.DIVE2025.domain.transporterRequest.entity.TransportRequest;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -22,4 +19,6 @@ public interface TransportMapper {
     FindResultDto findTransportRequestIdByTransferReqeustId(@Param("transferRequestId") Long transferRequestId);
     int updateTransportRequestStatus(UpdateTprRequestDto updateTprRequestDto);
     int deleteTransportRequest(@Param("id") Long id);
+
+    List<TprListResponseDto> getAllRequestByTransporterId(@Param("transporterId") Long transporterId);
 }

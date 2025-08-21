@@ -44,4 +44,12 @@
     </select>
 
 
+    <select id="getAllRequestByTransporterId"
+            resultType="com.example.DIVE2025.domain.transporterRequest.dto.TprListResponseDto">
+        SELECT *
+        FROM transporter_request tr
+        WHERE tr.transporter_id = #{transporterId}
+    </select>
+
+
 </mapper>

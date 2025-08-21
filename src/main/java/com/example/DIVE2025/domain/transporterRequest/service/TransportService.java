@@ -81,5 +81,9 @@ public class TransportService {
         return transportMapper.deleteTransportRequest(transferRequestId);
     }
 
+    public List<TprListResponseDto> getAllRequestsByTransporterId(Long transporterId) {
+        return transportMapper.getAllRequestByTransporterId(transporterId);
+    }
+
 
 }
