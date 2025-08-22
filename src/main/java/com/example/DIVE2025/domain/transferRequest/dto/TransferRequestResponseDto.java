@@ -21,6 +21,7 @@ public class TransferRequestResponseDto {
     private Double fromShelterLatitude;
     private Double fromShelterLongitude;
     private RequestStatus requestStatus;
+    private String message;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
