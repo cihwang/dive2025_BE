@@ -31,9 +31,9 @@ public interface RescuedQueryMapper {
     List<RescuedResponseDto> findTransferCandidates(
             @Param("shelterId") Long shelterId,
             @Param("usePeriod") boolean usePeriod,
-            @Param("dueWithinDays") int dueWithinDays, // 0=경과만, n=임박 포함
+            @Param("dueWithinDays") int dueWithinDays,
             @Param("useSeverity") boolean useSeverity,
-            @Param("condition") String condition,
+            @Param("conditions") List<String> conditions,  // ✅ List<String>
             @Param("sort") String sort,
             @Param("order") String order,
             @Param("offset") int offset,
