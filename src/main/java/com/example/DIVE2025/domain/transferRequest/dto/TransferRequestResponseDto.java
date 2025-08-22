@@ -29,4 +29,10 @@ public class TransferRequestResponseDto {
     private LocalDateTime createdAt;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
+    // --- 🔥 구조 동물 상태 추가 ---
+    private String sex;
+    private String neuterYn;
+    private String animalCondition;
+    private String kindNm;
 }
