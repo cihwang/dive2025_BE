@@ -52,6 +52,15 @@ public class SpringDocGroupConfig {
                 .build();
     }
 
+    /** 운송자 조회/운송 신청/삭제 */
+    @Bean
+    public GroupedOpenApi transportRequestApi() {
+        return GroupedOpenApi.builder()
+                .group("transport")
+                .pathsToMatch("/api/transport/**")
+                .build();
+    }
+
     /** 관리자용: 데이터 적재/동기화/점검 */
     @Bean
     public GroupedOpenApi adminRescuedApi() {
