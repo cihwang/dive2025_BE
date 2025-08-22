@@ -1,11 +1,9 @@
 package com.example.DIVE2025.domain.rescued.service;
 
-
 import com.example.DIVE2025.domain.rescued.ai.SpecialMarkAiClient;
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiItemDto;
 import com.example.DIVE2025.domain.rescued.dto.RescuedApiResponse;
 import com.example.DIVE2025.domain.rescued.dto.RescuedResponseDto;
-import com.example.DIVE2025.domain.rescued.entity.Rescued;
 import com.example.DIVE2025.domain.rescued.enums.ProtectionStatus;
 import com.example.DIVE2025.domain.rescued.mapper.RescuedMapper;
 import com.example.DIVE2025.domain.rescued.util.FileUploadUtil;
@@ -18,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -41,13 +39,11 @@ public class RescuedImportService {
     private final FileUploadUtil fileUploadUtil;
     private final SpecialMarkAiClient specialMarkAiClient;
 
-
     @Value("${external.abandon.base-url}") private String baseUrl;
     @Value("${external.abandon.path}") private String path;
     @Value("${external.abandon.service-key}") private String serviceKey;
-    @Value("${external.abandon.rows:1000}") private int rows;
-    @Value("${ai.analyzer.enabled:true}")
-    private boolean aiEnabled;
+    @Value("${external.abandon.rows:200}") private int rows;   // ✅ 기본 200으로 줄임
+    @Value("${ai.analyzer.enabled:true}") private boolean aiEnabled;
 
     private static final DateTimeFormatter API_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -70,37 +66,38 @@ public class RescuedImportService {
         List<String> regs = rescuedMapper.selectAllCareRegNos();
         int changed = 0;
         for (String reg : regs) {
-            changed += fetchAndApply(start, end, reg, /*state=*/"protect");
+            changed += fetchAndApply(start, end, reg, "protect");
         }
         log.info("Initial build changed rows={}", changed);
         return changed;
     }
 
-    /** 2) 정기 동기화: 최근 N일(기본 2~3일), state 없이 가져와서 상태 문자열로 판단 */
+    /** 2) 정기 동기화: 최근 N일 */
     public int syncRecentDays(int recentDays) {
         LocalDate end = LocalDate.now();
         LocalDate start = end.minusDays(recentDays);
         List<String> regs = rescuedMapper.selectAllCareRegNos();
         int changed = 0;
         for (String reg : regs) {
-            changed += fetchAndApply(start, end, reg, /*state=*/null);
+            changed += fetchAndApplyChunked(start, end, reg, null, 5); // 5일 단위 쪼개기
         }
         log.info("Sync changed rows={}", changed);
         return changed;
     }
 
     /** 공통 fetch + 적용 (state가 null이면 파라미터 생략) */
+    /** 공통 fetch + 적용 (state가 null이면 파라미터 생략) */
     private int fetchAndApply(LocalDate start, LocalDate end, String careRegNo, String stateOrNull) {
         int affected = 0;
         int page = 1;
 
-        for (;;) {
-            // 1) 서비스키 정리: null/공백 방지 + 단일 인코딩
-            String rawKey = serviceKey == null ? "" : serviceKey.trim();
+        while (true) {
+            // --- URI 구성 ---
+            String rawKey = (serviceKey == null) ? "" : serviceKey.trim();
             String encodedKey = URLEncoder.encode(rawKey, StandardCharsets.UTF_8);
 
             UriComponentsBuilder b = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
-                    .queryParam("serviceKey", encodedKey) // 이미 인코딩된 값
+                    .queryParam("serviceKey", encodedKey)
                     .queryParam("care_reg_no", careRegNo)
                     .queryParam("bgnde", start.format(API_FMT))
                     .queryParam("endde", end.format(API_FMT))
@@ -109,94 +106,108 @@ public class RescuedImportService {
                     .queryParam("_type", "json");
 
             if (stateOrNull != null) b.queryParam("state", stateOrNull);
-
-            // ★ 전체 URI는 재인코딩 금지
             URI uri = b.build(true).toUri();
 
-            try {
-                log.info("CALL {} (careRegNo={}, page={}, key.len={})",
-                        maskKey(uri.toString()), careRegNo, page, rawKey.length());
+            boolean fetched = false;
+            int retries = 0;
 
-                var headers = new HttpHeaders();
-                headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-                var req = new HttpEntity<String>(headers);
+            // --- 재시도 루프 (최대 3번) ---
+            while (!fetched && retries < 3) {
+                try {
+                    log.info("CALL {} (careRegNo={}, page={}, try={})",
+                            maskKey(uri.toString()), careRegNo, page, retries + 1);
 
-                var respEntity = rest.exchange(uri, HttpMethod.GET, req, String.class);
-                log.info("RESP status={} headers={}", respEntity.getStatusCode(), respEntity.getHeaders());
+                    var headers = new HttpHeaders();
+                    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+                    var req = new HttpEntity<String>(headers);
 
-                String raw = respEntity.getBody();
-                if (raw == null || raw.isBlank()) { log.warn("Empty body"); break; }
-
-                String head = raw.substring(0, Math.min(400, raw.length())).replaceAll("\\s+"," ");
-                if (head.startsWith("<")) { // XML/HTML = 오류 응답
-                    log.warn("Non-JSON (likely auth/quota). head={}", head);
-                    break;
-                }
-
-                RescuedApiResponse api = lenientObjectMapper.readValue(raw, RescuedApiResponse.class);
-                var header = (api!=null && api.getResponse()!=null) ? api.getResponse().getHeader() : null;
-                if (header != null && !"00".equals(header.getResultCode())) {
-                    log.warn("API error resultCode={}, msg={}", header.getResultCode(), header.getResultMsg());
-                    break;
-                }
-
-                var respBody = api.getResponse().getBody();
-                var items = (respBody!=null && respBody.getItems()!=null) ? respBody.getItems().getItem() : null;
-                if (items == null || items.isEmpty()) { log.info("No items (page={})", page); break; }
-
-                for (RescuedApiItemDto d : items) {
-                    var e = d.toEntity();
-
-                    String specialMark = null;
-                    try{
-                        specialMark = d.getSpecialMark();
-                    }catch(Exception ignore){
-                        specialMark = null;
+                    var respEntity = rest.exchange(uri, HttpMethod.GET, req, String.class);
+                    String raw = respEntity.getBody();
+                    if (raw == null || raw.isBlank()) {
+                        log.warn("Empty body");
+                        return affected; // ❌ 데이터 없음 → 바로 종료
+                    }
+                    if (raw.startsWith("<")) {
+                        log.warn("Non-JSON response head={}", raw.substring(0, 100));
+                        return affected;
                     }
 
-                    if (aiEnabled && e.getProtectionStatus() != ProtectionStatus.FINISHED) {
-                        try {
-                            var cond = specialMarkAiClient.analyze(specialMark);
-                            e.setAnimalCondition(cond != null ? cond : com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
-                        } catch (Exception ex) {
-                            // 실패 시 안전 기본값
+                    // --- 응답 파싱 ---
+                    RescuedApiResponse api = lenientObjectMapper.readValue(raw, RescuedApiResponse.class);
+                    var respBody = (api != null && api.getResponse() != null) ? api.getResponse().getBody() : null;
+                    var items = (respBody != null && respBody.getItems() != null)
+                            ? respBody.getItems().getItem() : null;
+
+                    // --- 아이템 없음 → 종료 ---
+                    if (items == null || items.isEmpty()) {
+                        log.info("No more items careRegNo={}, page={}", careRegNo, page);
+                        return affected;
+                    }
+
+                    // --- DB 반영 ---
+                    for (RescuedApiItemDto d : items) {
+                        var e = d.toEntity();
+                        String specialMark = d.getSpecialMark();
+
+                        if (aiEnabled && e.getProtectionStatus() != ProtectionStatus.FINISHED) {
+                            try {
+                                var cond = specialMarkAiClient.analyze(specialMark);
+                                e.setAnimalCondition(cond != null ? cond :
+                                        com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+                            } catch (Exception ex) {
+                                e.setAnimalCondition(com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+                            }
+                        } else {
                             e.setAnimalCondition(com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
                         }
-                    } else {
-                        // AI 비활성 또는 FINISHED면 NORMAL로 통일
-                        e.setAnimalCondition(com.example.DIVE2025.domain.rescued.enums.AnimalCondition.NORMAL);
+
+                        int n = (e.getProtectionStatus() == ProtectionStatus.FINISHED)
+                                ? rescuedMapper.deleteByDesertionNo(e.getDesertionNo())
+                                : rescuedMapper.upsert(e);
+
+                        RescuedResponseDto shelterIdByDesertionNo =
+                                rescuedMapper.getShelterIdByDesertionNo(e.getDesertionNo());
+
+                        if (e.getProtectionStatus() != ProtectionStatus.FINISHED) {
+                            fileUploadUtil.uploadImageFromUrl(
+                                    e.getPopfile1(), shelterIdByDesertionNo.getShelterId(), e.getDesertionNo());
+                        }
+                        affected += n;
                     }
 
-
-                    int n = (e.getProtectionStatus()==ProtectionStatus.FINISHED)
-                            ? rescuedMapper.deleteByDesertionNo(e.getDesertionNo())
-                            : rescuedMapper.upsert(e);
-
-                    RescuedResponseDto shelterIdByDesertionNo = rescuedMapper.getShelterIdByDesertionNo(e.getDesertionNo());
-
-                    if(e.getProtectionStatus()!=ProtectionStatus.FINISHED) {
-                        fileUploadUtil.uploadImageFromUrl(e.getPopfile1(), shelterIdByDesertionNo.getShelterId(), e.getDesertionNo());
+                    // --- 페이지네이션 종료 조건 ---
+                    int total = (respBody != null) ? respBody.getTotalCount() : 0;
+                    if (total == 0 || page * rows >= total) {
+                        log.info("Finished all pages careRegNo={}, total={}", careRegNo, total);
+                        return affected;
                     }
 
-                    affected += n;
-                    log.debug("{} desertionNo={} -> affected={}",
-                            (e.getProtectionStatus()==ProtectionStatus.FINISHED) ? "DEL" : "UPSERT",
-                            e.getDesertionNo(), n);
+                    // 다음 페이지로 이동
+                    page++;
+                    fetched = true;
+
+                } catch (ResourceAccessException ex) {
+                    retries++;
+                    int backoff = (int) Math.pow(2, retries); // 2, 4, 8초
+                    log.warn("Timeout careRegNo={}, page={}, retry {}/3 after {}s",
+                            careRegNo, page, retries, backoff);
+                    try {
+                        Thread.sleep(backoff * 1000L);
+                    } catch (InterruptedException ignore) {}
+                } catch (Exception ex) {
+                    log.error("Fetch/apply failed careRegNo={}, page={}, uri={}",
+                            careRegNo, page, maskKey(uri.toString()), ex);
+                    return affected;
                 }
+            }
 
-                int total = (respBody != null) ? respBody.getTotalCount() : 0;
-                log.info("Fetched items={}, total={}, page={}, rows={}",
-                        (items!=null?items.size():0), total, page, rows);
-
-                if (total == 0 || page * rows >= total) break;
-                page++;
-
-            } catch (Exception ex) {
-                log.error("Fetch/apply failed careRegNo={}, page={}, uri={}",
-                        careRegNo, page, maskKey(uri.toString()), ex);
+            // 3번 재시도에도 실패 → 종료
+            if (!fetched) {
+                log.error("Failed after 3 retries careRegNo={}, page={}", careRegNo, page);
                 break;
             }
         }
+
         log.info("Applied careRegNo={}, affected={}", careRegNo, affected);
         return affected;
     }
@@ -207,19 +218,19 @@ public class RescuedImportService {
         return raw.replaceAll("(serviceKey=)([^&]+)", "$1***");
     }
 
-    // RescuedImportService - 임시 훅(테스트 후 삭제)
+    // 테스트용 훅
     public int rescuedImportService_testHook(LocalDate start, LocalDate end,
                                              String careRegNo, String state) {
         return fetchAndApply(start, end, careRegNo, state);
     }
 
-
-
+    /** 전체 보호소 import */
     public Map<String, Object> importAll(LocalDate start, LocalDate end, String stateOrNull, int windowDays) {
         List<String> careRegNos = rescuedMapper.selectAllCareRegNos();
         return importForList(careRegNos, start, end, stateOrNull, windowDays);
     }
 
+    /** 여러 보호소 import */
     public Map<String, Object> importForList(List<String> careRegNos, LocalDate start, LocalDate end,
                                              String stateOrNull, int windowDays) {
         Map<String, Integer> byShelter = new LinkedHashMap<>();
@@ -228,7 +239,6 @@ public class RescuedImportService {
         for (String careRegNo : careRegNos) {
             int changed;
             try {
-                // 선택: shelter_registration 매핑 없으면 스킵
                 if (!rescuedMapper.existsShelterMapping(careRegNo)) {
                     log.warn("skip import (no shelter_registration mapping) careRegNo={}", careRegNo);
                     byShelter.put(careRegNo, -2);
@@ -241,8 +251,6 @@ public class RescuedImportService {
             }
             byShelter.put(careRegNo, changed);
             if (changed > 0) total += changed;
-
-            // 공공API 배려 (QPS)
             try { Thread.sleep(120L); } catch (InterruptedException ignore) {}
         }
 
@@ -257,11 +265,13 @@ public class RescuedImportService {
         return out;
     }
 
+    /** 단일 보호소 import */
     public int importOne(String careRegNo, LocalDate start, LocalDate end,
                          String stateOrNull, int windowDays) {
         return fetchAndApplyChunked(start, end, careRegNo, stateOrNull, windowDays);
     }
 
+    /** 기간 분할 실행 */
     private int fetchAndApplyChunked(LocalDate start, LocalDate end,
                                      String careRegNo, String stateOrNull, int windowDays) {
         int affected = 0;
@@ -269,13 +279,10 @@ public class RescuedImportService {
         while (!s.isAfter(end)) {
             LocalDate e = s.plusDays(windowDays - 1);
             if (e.isAfter(end)) e = end;
-            affected += fetchAndApply(s, e, careRegNo, stateOrNull); // 기존 페이지네이션 포함 메서드 재사용
+            affected += fetchAndApply(s, e, careRegNo, stateOrNull);
             s = e.plusDays(1);
             try { Thread.sleep(80L); } catch (InterruptedException ignore) {}
         }
         return affected;
     }
-
-
-
 }

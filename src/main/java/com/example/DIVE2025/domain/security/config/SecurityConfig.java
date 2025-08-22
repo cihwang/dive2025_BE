@@ -52,17 +52,18 @@ public class SecurityConfig {
                                 "/v3/api-docs.yaml",
                                 "/api/auth/**",            // 로그인/토큰 발급 등
                                 "/api/shelter/get-all",     //전체 보호센터 목록 불러오기
+                                "/admin/rescued/sync",
                                 "/"
                         ).permitAll()
                         // 관리자 전용
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/shelter/**", "/api/rescued/**").hasRole("SHELTER")
-                        .requestMatchers("/api/transport/**").hasRole("TRANSPORTER")
+                        .requestMatchers("/api/transport/**").hasAnyRole("TRANSPORTER","SHELTER")
                         .requestMatchers("/api/**").authenticated()
 
-                        // 그 외 모두 인증 필요x
-                        .anyRequest().permitAll()
+                        // 그 외 모두 인증 필요O
+                        .anyRequest().authenticated()
                 )
 
                 // ⚠️ AuthenticationProvider는 자동 구성에 맡김(수동 등록 금지)

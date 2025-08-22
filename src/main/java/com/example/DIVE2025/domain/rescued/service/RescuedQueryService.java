@@ -109,7 +109,7 @@ public class RescuedQueryService {
             boolean usePeriod,
             int dueWithinDays,
             boolean useSeverity,
-            String condition,
+            List<String> conditions,  // ✅ 단일 condition → List<String> 로 수정
             String sort,
             String order,
             int offset,
@@ -118,7 +118,7 @@ public class RescuedQueryService {
         int safeOffset = Math.max(0, offset);
         int safeLimit  = Math.min(Math.max(1, limit), 100);
 
-        // ✅ 정렬 화이트리스트: null/허용 외 값이면 sort=null 처리(→ XML에서 기본 다중 정렬 사용)
+        // ✅ 정렬 화이트리스트: 허용되지 않은 값이면 sort=null (XML에서 기본 정렬 적용)
         Set<String> allowedSorts = Set.of("overdue", "daysProtected", "happenDt", "rescueDate", "age", "weight");
         String safeSort = (sort != null && allowedSorts.contains(sort)) ? sort : null;
 
@@ -126,7 +126,9 @@ public class RescuedQueryService {
         String safeOrder = ("asc".equalsIgnoreCase(order)) ? "asc" : "desc";
 
         return rescuedQueryMapper.findTransferCandidates(
-                shelterId, usePeriod, dueWithinDays, useSeverity, condition, safeSort, safeOrder, safeOffset, safeLimit
+                shelterId, usePeriod, dueWithinDays, useSeverity,
+                conditions,    // ✅ condition 대신 conditions 전달
+                safeSort, safeOrder, safeOffset, safeLimit
         );
     }
 }
