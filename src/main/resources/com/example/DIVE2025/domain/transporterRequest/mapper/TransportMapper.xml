@@ -27,11 +27,11 @@
                (6371 * ACOS(
                        COS(RADIANS( #{fromShelterLatitude}))
                            * COS(RADIANS(tp.latitude))
-                           * COS(RADIANS(tp.longitude) - RADIANS( #{toShelterLongitude}))
+                           * COS(RADIANS(tp.longitude) - RADIANS( #{fromShelterLongitude}))
                            + SIN(RADIANS(#{fromShelterLatitude})) * SIN(RADIANS(tp.latitude))
                        )) AS distance
         FROM transporter tp
-        WHERE tp.longitude != #{toShelterLongitude}
+        WHERE tp.longitude != #{fromShelterLongitude}
         ORDER BY distance
         LIMIT 10;
     </select>
