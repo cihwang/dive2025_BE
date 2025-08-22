@@ -160,7 +160,7 @@ public class RescuedQueryController {
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "400") int limit,
             @AuthenticationPrincipal(expression = "shelterId") Long currentShelterId
     ) {
         var list = rescuedQueryService.getTransferCandidates(

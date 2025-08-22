@@ -39,10 +39,15 @@
                tr.request_status,
                tr.message,
                tr.created_at,
-               tr.updated_at
+               tr.updated_at,
+               r.sex,
+               r.neuter_yn,
+               r.animal_condition,
+               r.kind_nm
         FROM transfer_request tr
                  JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
                  JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+                 JOIN rescued r ON tr.rescued_id = r.id
         WHERE tr.from_shelter_id = #{fromShelterId}
     </select>
 
@@ -59,10 +64,15 @@
                tr.transporter_id,
                tr.message,
                tr.created_at,
-               tr.updated_at
+               tr.updated_at,
+               r.sex,
+               r.neuter_yn,
+               r.animal_condition,
+               r.kind_nm
         FROM transfer_request tr
                  JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
                  JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+                 JOIN rescued r ON tr.rescued_id = r.id
         WHERE tr.to_shelter_id = #{toShelterId}
     </select>
 
