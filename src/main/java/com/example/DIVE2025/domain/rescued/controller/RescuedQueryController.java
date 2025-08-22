@@ -156,7 +156,7 @@ public class RescuedQueryController {
             @RequestParam(defaultValue = "false") boolean usePeriod,
             @RequestParam(defaultValue = "0") int dueWithinDays,
             @RequestParam(defaultValue = "false") boolean useSeverity,
-            @RequestParam(defaultValue = "ALL") String condition,
+            @RequestParam(required = false) List<String> conditions,
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int offset,
@@ -164,7 +164,7 @@ public class RescuedQueryController {
             @AuthenticationPrincipal(expression = "shelterId") Long currentShelterId
     ) {
         var list = rescuedQueryService.getTransferCandidates(
-                currentShelterId, usePeriod, dueWithinDays, useSeverity, condition, sort, order, offset, limit
+                currentShelterId, usePeriod, dueWithinDays, useSeverity, conditions, sort, order, offset, limit
         );
         return ResponseEntity.ok(list);
     }

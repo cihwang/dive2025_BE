@@ -237,7 +237,7 @@
         CASE
         -- 보호기간 초과 OR 질병조건 불일치 → 이관 필요
         WHEN DATEDIFF(CURRENT_DATE, COALESCE(r.happen_dt, r.rescue_date)) > 10
-        OR (r.animal_condition = 'MILD' AND s.shelter_feature = 'GENERAL')
+        OR (r.animal_condition = 'MILD'   AND s.shelter_feature = 'GENERAL')
         OR (r.animal_condition = 'SEVERE' AND (s.shelter_feature = 'GENERAL' OR s.shelter_feature = 'VET'))
         THEN TRUE ELSE FALSE
         END AS needsTransfer
@@ -250,25 +250,41 @@
             AND r.protection_status = 'PROTECTED'
             AND r.animal_condition IN ('MILD','SEVERE')   <!-- NORMAL 제외 -->
 
-            <!-- 조건 필터링: 프론트엔드에서 옵션별 버튼으로 전달 -->
+            <!-- 질병/보호소 불일치 -->
             <if test="useSeverity">
                 AND (
-                (r.animal_condition = 'MILD' AND s.shelter_feature = 'GENERAL')
+                (r.animal_condition = 'MILD'   AND s.shelter_feature = 'GENERAL')
                 OR
                 (r.animal_condition = 'SEVERE' AND (s.shelter_feature = 'GENERAL' OR s.shelter_feature = 'VET'))
                 )
             </if>
 
-            <if test="usePeriod">
+            <!-- 보호기간 필터링 -->
+            <!-- 경과: dueWithinDays == 0 -->
+            <if test="usePeriod and dueWithinDays == 0">
                 <![CDATA[
             AND COALESCE(r.protect_end_date,
                          DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
-            <= DATE_ADD(CURRENT_DATE, INTERVAL #{dueWithinDays} DAY)
+            < CURRENT_DATE
             ]]>
             </if>
 
-            <if test="condition != null and condition != 'ALL'">
-                AND r.animal_condition = #{condition}
+            <!-- 임박: dueWithinDays > 0 -->
+            <if test="usePeriod and dueWithinDays > 0">
+                <![CDATA[
+            AND COALESCE(r.protect_end_date,
+                         DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
+            BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL #{dueWithinDays} DAY)
+            ]]>
+            </if>
+
+            <!-- ✅ 여러 condition OR 필터링 -->
+            <if test="conditions != null and conditions.size > 0">
+                AND (
+                <foreach collection="conditions" item="c" separator=" OR ">
+                    r.animal_condition = #{c}
+                </foreach>
+                )
             </if>
         </where>
 
@@ -322,6 +338,8 @@
 
         LIMIT #{limit} OFFSET #{offset}
     </select>
+
+
 
 
 </mapper>
