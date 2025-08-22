@@ -59,7 +59,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/shelter/**", "/api/rescued/**").hasRole("SHELTER")
-                        .requestMatchers("/api/transport/**").hasRole("TRANSPORTER")
+                        .requestMatchers("/api/transport/**").hasAnyRole("TRANSPORTER","SHELTER")
                         .requestMatchers("/api/**").authenticated()
 
                         // 그 외 모두 인증 필요O

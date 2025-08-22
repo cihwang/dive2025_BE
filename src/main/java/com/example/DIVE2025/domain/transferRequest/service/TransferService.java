@@ -4,6 +4,7 @@ import com.example.DIVE2025.domain.transferRequest.Mapper.TransferMapper;
 import com.example.DIVE2025.domain.transferRequest.dto.*;
 import com.example.DIVE2025.domain.transferRequest.enums.RequestDecision;
 import com.example.DIVE2025.domain.transferRequest.enums.RequestStatus;
+import com.example.DIVE2025.domain.transporterRequest.dto.FindTransporterStoreNameDto;
 import com.example.DIVE2025.domain.transporterRequest.enums.TprDecisionStatus;
 import com.example.DIVE2025.domain.transporterRequest.mapper.TransportMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,14 +57,33 @@ public class TransferService {
      * 보내는 보호소 기준 모든 Request 조회
      */
     public List<TransferRequestResponseDto> getAllRequestsByFromShelterId(Long shelterId) {
-       return transferMapper.getTransferByFromShelterId(shelterId);
+        List<TransferRequestResponseDto> transferByFromShelterId = transferMapper.getTransferByFromShelterId(shelterId);
+
+        for (TransferRequestResponseDto dto : transferByFromShelterId) {
+            if(dto.getTransporterId() != null){
+                String storeName = transportMapper.getTransporterNameById(dto.getTransporterId()).getStoreName();
+                dto.setTransporterName(storeName);
+            }
+        }
+
+        return transferByFromShelterId;
     }
 
     /**
      * 받는 보호소 기준 모든 Request 조회
      */
     public List<TransferRequestResponseDto> getAllRequestsByToShelterId(Long shelterId) {
-        return transferMapper.getTransferByToShelterId(shelterId);
+
+        List<TransferRequestResponseDto> transferByToShelterId = transferMapper.getTransferByToShelterId(shelterId);
+
+        for (TransferRequestResponseDto dto : transferByToShelterId) {
+            if(dto.getTransporterId() != null){
+                String storeName = transportMapper.getTransporterNameById(dto.getTransporterId()).getStoreName();
+                dto.setTransporterName(storeName);
+            }
+        }
+
+        return transferByToShelterId;
     }
 
     public int updateTfrStatusByTpr(UpdateTfrStatusRequestByTprDto dto){
@@ -72,6 +92,8 @@ public class TransferService {
         if(curStatus.equals(TprDecisionStatus.ACCEPT)){
             UpdateTfrStatusResponseByTprDto updateData = UpdateTfrStatusResponseByTprDto.builder()
                     .id(dto.getId())
+                    .transporterId(dto.getTransporterId())
+                    .message(dto.getMessage())
                     .requestStatus(RequestStatus.TRANSPORTER_ACCEPTED)
                     .build();
 
@@ -80,6 +102,8 @@ public class TransferService {
         }else if(curStatus.equals(TprDecisionStatus.REJECT)){
             UpdateTfrStatusResponseByTprDto updateData = UpdateTfrStatusResponseByTprDto.builder()
                     .id(dto.getId())
+                    .transporterId(dto.getTransporterId())
+                    .message(dto.getMessage())
                     .requestStatus(RequestStatus.TRANSPORTER_REJECTED)
                     .build();
 

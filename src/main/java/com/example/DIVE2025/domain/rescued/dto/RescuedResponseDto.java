@@ -28,6 +28,7 @@ public class RescuedResponseDto {
     private String weight;
     private String sex;             // "M","F","U"
     private String neuterYn;        // "Y","N","U"
+    private String animalCondition;
 
     // 상태/일자
     private String protectionStatus; // "PROTECTED","FINISHED"

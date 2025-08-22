@@ -18,7 +18,7 @@
 
     <update id="updateRequestStatusByTpr">
         UPDATE transfer_request
-        SET request_status = #{requestStatus}
+        SET request_status = #{requestStatus}, message = #{message}, transporter_id = #{transporterId}
         WHERE id = #{id}
     </update>
 
@@ -29,16 +29,37 @@
 
     <select id="getTransferByFromShelterId"
             resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
-        SELECT tr.id, tr.rescued_id, sh1.username AS from_shelter_name, sh2.username AS to_shelter_name, sh1.latitude AS from_shelter_latitude, sh1.longitude AS from_shelter_longitude,  tr.request_status, tr.created_at, tr.updated_at
+        SELECT tr.id,
+               tr.rescued_id,
+               sh1.username   AS from_shelter_name,
+               sh2.username   AS to_shelter_name,
+               sh1.latitude   AS from_shelter_latitude,
+               sh1.longitude  AS from_shelter_longitude,
+               tr.transporter_id,
+               tr.request_status,
+               tr.message,
+               tr.created_at,
+               tr.updated_at
         FROM transfer_request tr
-        JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
-        JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+                 JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
+                 JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
         WHERE tr.from_shelter_id = #{fromShelterId}
     </select>
 
+
     <select id="getTransferByToShelterId"
             resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
-        SELECT tr.id, tr.rescued_id, sh1.username AS fromShelterName, sh2.username AS toShelterName, tr.request_status, tr.created_at, tr.updated_at
+        SELECT tr.id,
+               tr.rescued_id,
+               sh1.username   AS from_shelter_name,
+               sh2.username   AS to_shelter_name,
+               sh1.latitude   AS from_shelter_latitude,
+               sh1.longitude  AS from_shelter_longitude,
+               tr.request_status,
+               tr.transporter_id,
+               tr.message,
+               tr.created_at,
+               tr.updated_at
         FROM transfer_request tr
                  JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
                  JOIN shelter sh2 ON tr.to_shelter_id = sh2.id

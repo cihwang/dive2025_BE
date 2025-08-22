@@ -12,5 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateTfrStatusRequestByTprDto {
     private Long id;
+    private Long transporterId;
+    private String message;
     private TprDecisionStatus tprDecisionStatus;
 }

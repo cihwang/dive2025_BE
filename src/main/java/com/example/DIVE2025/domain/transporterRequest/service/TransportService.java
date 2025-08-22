@@ -64,8 +64,13 @@ public class TransportService {
             throw new IllegalStateException("update transport request status failed");
         }
 
+        Long transporterId = transportMapper.getTransporterIdById(dto.getId()).getTransporterId();
+
+        // TransporterRequest -> TransferRequest 업데이트
         UpdateTfrStatusRequestByTprDto updateDto = UpdateTfrStatusRequestByTprDto.builder()
                 .id(dto.getTransferRequestId())
+                .transporterId(transporterId)
+                .message(dto.getMessage())
                 .tprDecisionStatus(dto.getDecisionStatus())
                 .build();
 

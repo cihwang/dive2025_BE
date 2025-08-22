@@ -215,6 +215,7 @@
 
         /* 상태/일자 */
         r.protection_status            AS protectionStatus,
+        r.animal_condition             AS animalCondition,
         r.happen_dt                    AS happenDt,
         r.rescue_date                  AS rescueDate,
         r.move_date                    AS moveDate,
