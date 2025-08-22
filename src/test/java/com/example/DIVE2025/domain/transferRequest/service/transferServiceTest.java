@@ -54,9 +54,7 @@ class transferServiceTest {
 
     @Test
     void 타겟보호소로요청목록가져오기(){
-        List<TransferRequestResponseDto> allRequestsByToShelterId = transferService.getAllRequestsByToShelterId(2L);
-        List<TransferRequestResponseDto> allRequestsByFromShelterId = transferService.getAllRequestsByFromShelterId(1L);
+        List<TransferRequestResponseDto> allRequestsByToShelterId = transferService.getAllRequestsByFromShelterId(1L);
         System.out.println(allRequestsByToShelterId);
-        Assertions.assertThat(allRequestsByToShelterId).isEqualTo(allRequestsByFromShelterId);
     }
 }

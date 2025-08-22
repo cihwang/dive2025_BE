@@ -18,7 +18,7 @@
 
     <update id="updateRequestStatusByTpr">
         UPDATE transfer_request
-        SET request_status = #{requestStatus}
+        SET request_status = #{requestStatus}, message = #{message}, transporter_id = #{transporterId}
         WHERE id = #{id}
     </update>
 
@@ -35,6 +35,7 @@
                sh2.username   AS to_shelter_name,
                sh1.latitude   AS from_shelter_latitude,
                sh1.longitude  AS from_shelter_longitude,
+               tr.transporter_id,
                tr.request_status,
                tr.message,
                tr.created_at,
@@ -55,6 +56,7 @@
                sh1.latitude   AS from_shelter_latitude,
                sh1.longitude  AS from_shelter_longitude,
                tr.request_status,
+               tr.transporter_id,
                tr.message,
                tr.created_at,
                tr.updated_at

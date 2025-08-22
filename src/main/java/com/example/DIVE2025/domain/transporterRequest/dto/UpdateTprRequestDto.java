@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UpdateTprRequestDto {
-    private Long id; // Tpr_id
+    private Long id; // TransporterRequest id
     private Long transferRequestId;
     private TprDecisionStatus decisionStatus; // ACCEPT, REJECT
+    private String message;
 }

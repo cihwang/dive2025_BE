@@ -51,5 +51,19 @@
         WHERE tr.transporter_id = #{transporterId}
     </select>
 
+    <select id="getTransporterIdById"
+            resultType="com.example.DIVE2025.domain.transporterRequest.dto.FindTransporterIdResponseDto">
+        SELECT transporter_id
+        FROM transporter_request
+        WHERE id = #{transportRequestId}
+    </select>
+
+    <select id="getTransporterNameById"
+            resultType="com.example.DIVE2025.domain.transporterRequest.dto.FindTransporterStoreNameDto">
+        SELECT store_name
+        FROM transporter
+        WHERE id = #{transporterId};
+    </select>
+
 
 </mapper>

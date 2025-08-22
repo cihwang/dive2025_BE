@@ -25,7 +25,7 @@ class TransportControllerTest {
     void recommendTransport() {
         RecommendTransporterRequestDto recommendTransporterRequestDto = RecommendTransporterRequestDto.builder()
                 .fromShelterLatitude(35.151443)
-                .toShelterLongitude(128.93962)
+                .fromShelterLongitude(128.93962)
                 .build();
 
         ResponseEntity<?> allRecommendedTransporter = transportController.findAllRecommendedTransporter(recommendTransporterRequestDto);

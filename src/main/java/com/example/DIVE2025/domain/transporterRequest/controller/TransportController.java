@@ -20,7 +20,7 @@ public class TransportController {
     }
 
     @GetMapping("/recommend-transporter")
-    public ResponseEntity<?> findAllRecommendedTransporter(@RequestBody RecommendTransporterRequestDto recommendTransporterRequestDto) {
+    public ResponseEntity<?> findAllRecommendedTransporter(@RequestParam RecommendTransporterRequestDto recommendTransporterRequestDto) {
         List<RecommendTransporterResponseDto> transporterByFromShelter = transportService.findTransporterByFromShelter(recommendTransporterRequestDto);
         return ResponseEntity.ok(transporterByFromShelter);
     }
