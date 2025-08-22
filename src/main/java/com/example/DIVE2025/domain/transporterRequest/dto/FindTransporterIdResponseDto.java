@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RecommendTransporterRequestDto {
-    private Double fromShelterLatitude;
-    private Double fromShelterLongitude;
+public class FindTransporterIdResponseDto {
+    private Long transporterId;
 }

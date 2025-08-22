@@ -15,6 +15,7 @@ public class TransferRequest {
     private Long rescuedId;
     private Long fromShelterId;
     private Long toShelterId;
+    private Long transporter_id;
     private RequestStatus requestStatus;
     private String message;
     private LocalDateTime createdAt;

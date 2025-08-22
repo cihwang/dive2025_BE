@@ -21,4 +21,8 @@ public interface TransportMapper {
     int deleteTransportRequest(@Param("id") Long id);
 
     List<TprListResponseDto> getAllRequestByTransporterId(@Param("transporterId") Long transporterId);
+
+    FindTransporterIdResponseDto getTransporterIdById(@Param("transportRequestId") Long transportRequestId);
+
+    FindTransporterStoreNameDto getTransporterNameById(@Param("transporterId") Long transporterId);
 }
