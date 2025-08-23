@@ -44,7 +44,7 @@ public class TransportController {
     }
 
     @GetMapping("/get-all")
-    public ResponseEntity<?> getAllTransportRequest(@RequestParam Long id) {
+    public ResponseEntity<?> getAllTransportRequest(@RequestParam("id") Long id) {
         List<TprListResponseDto> allRequestsByTransporterId = transportService.getAllRequestsByTransporterId(id);
         return ResponseEntity.ok(allRequestsByTransporterId);
     }

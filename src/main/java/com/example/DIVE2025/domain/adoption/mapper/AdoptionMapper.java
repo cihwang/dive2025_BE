@@ -13,9 +13,9 @@ import java.util.List;
 public interface AdoptionMapper {
 
     // shelterId로 normal인 동물들만 가져오기
-    List<FindAdoptionListResponseDto> findAdoptionListByShelterId(Long shelterId);
+    List<FindAdoptionListResponseDto> findAdoptionListByShelterId(@Param("shelterId")Long shelterId);
 
     List<RecommendAdoptCenterResponseDto> recommendAdoptCenter(RecommendAdoptCenterRequestDto recommendAdoptCenterRequestDto);
 
-    List<TransferRequestResponseDto> getTransferByAdoptionId(@Param("adoptionId") Long fromShelterId);
+    List<TransferRequestResponseDto> getTransferByAdoptionId(@Param("adoptionId") Long adoptionId);
 }

@@ -8,13 +8,13 @@
     <select id="findAdoptionListByShelterId"
             resultType="com.example.DIVE2025.domain.adoption.dto.FindAdoptionListResponseDto">
         SELECT r.id, r.shelter_id, r.desertion_no,
-               REPLACE(REPLACE(r.age,'(60일미만)',''),'(년생)','') AS parse_age,
-               REPLACE(r.weight,'(Kg)','') AS parse_weight,
+               REPLACE(REPLACE(r.age,'(60일미만)',''),'(년생)','') AS parseAge,
+               REPLACE(r.weight,'(Kg)','') AS parseWeight,
                r.sex,
                r.animal_condition
         FROM rescued r
         WHERE r.shelter_id = #{shelterId} AND
-              r.animal_condition = "NORMAL";
+              r.animal_condition = 'NORMAL';
 
     </select>
 
