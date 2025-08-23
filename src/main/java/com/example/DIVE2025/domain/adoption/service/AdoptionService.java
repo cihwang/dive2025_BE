@@ -8,11 +8,13 @@ import com.example.DIVE2025.domain.transferRequest.Mapper.TransferMapper;
 import com.example.DIVE2025.domain.transferRequest.dto.TrSaveRequestDto;
 import com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto;
 import com.example.DIVE2025.domain.transporterRequest.mapper.TransportMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class AdoptionService {
 
@@ -29,6 +31,7 @@ public class AdoptionService {
     }
 
     public List<RecommendAdoptCenterResponseDto> findAdoptCenterByFromShelter(RecommendAdoptCenterRequestDto recommendAdoptCenterRequestDto) {
+        log.info("AdoptionService findAdoptCenterByFromShelter");
         return adoptionMapper.recommendAdoptCenter(recommendAdoptCenterRequestDto);
     }
 
