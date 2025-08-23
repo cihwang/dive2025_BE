@@ -249,9 +249,15 @@
         <where>
             r.shelter_id = #{shelterId}
             AND r.protection_status = 'PROTECTED'
-            AND r.animal_condition IN ('MILD','SEVERE')   <!-- NORMAL 제외 -->
 
-            <!-- 질병/보호소 불일치 -->
+            <!-- ✅ 기본 포함: (보호기간 초과) OR (질병-보호소 불일치) -->
+            AND (
+            DATEDIFF(CURRENT_DATE, COALESCE(r.happen_dt, r.rescue_date)) > 10
+            OR (r.animal_condition = 'MILD'   AND s.shelter_feature = 'GENERAL')
+            OR (r.animal_condition = 'SEVERE' AND (s.shelter_feature = 'GENERAL' OR s.shelter_feature = 'VET'))
+            )
+
+            <!-- 🔎 질병 불일치만 보고 싶을 때(추가 필터) -->
             <if test="useSeverity">
                 AND (
                 (r.animal_condition = 'MILD'   AND s.shelter_feature = 'GENERAL')
@@ -260,26 +266,26 @@
                 )
             </if>
 
-            <!-- 보호기간 필터링 -->
-            <!-- 경과: dueWithinDays == 0 -->
+            <!-- 🔎 보호기간 필터(추가 필터) -->
+            <!-- 경과만 -->
             <if test="usePeriod and dueWithinDays == 0">
                 <![CDATA[
-            AND COALESCE(r.protect_end_date,
-                         DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
-            < CURRENT_DATE
-            ]]>
+    AND COALESCE(r.protect_end_date,
+                 DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
+    < CURRENT_DATE
+    ]]>
             </if>
 
-            <!-- 임박: dueWithinDays > 0 -->
+            <!-- 임박만 -->
             <if test="usePeriod and dueWithinDays > 0">
                 <![CDATA[
-            AND COALESCE(r.protect_end_date,
-                         DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
-            BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL #{dueWithinDays} DAY)
-            ]]>
+    AND COALESCE(r.protect_end_date,
+                 DATE_ADD(COALESCE(r.happen_dt, r.rescue_date), INTERVAL 10 DAY))
+    BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL #{dueWithinDays} DAY)
+    ]]>
             </if>
 
-            <!-- ✅ 여러 condition OR 필터링 -->
+            <!-- 🔎 특정 상태만 보고 싶을 때(추가 필터) -->
             <if test="conditions != null and conditions.size > 0">
                 AND (
                 <foreach collection="conditions" item="c" separator=" OR ">
@@ -288,6 +294,7 @@
                 )
             </if>
         </where>
+
 
         <!-- 동적 정렬 -->
         <choose>
@@ -337,7 +344,11 @@
             </otherwise>
         </choose>
 
-        LIMIT #{limit} OFFSET #{offset}
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+            OFFSET #{offset}
+        </if>
+
     </select>
 
 

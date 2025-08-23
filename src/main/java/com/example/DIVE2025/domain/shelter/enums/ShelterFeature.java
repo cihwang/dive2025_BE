@@ -6,5 +6,6 @@ import lombok.Getter;
 public enum  ShelterFeature {
     GENERAL, // 0
     VET, // 1
-    HOSPITAL; // 2
+    HOSPITAL, // 2
+    ADOPTION // 3
 }
