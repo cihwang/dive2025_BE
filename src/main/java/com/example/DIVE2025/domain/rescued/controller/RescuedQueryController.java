@@ -153,14 +153,14 @@ public class RescuedQueryController {
      */
     @GetMapping("/transfer-candidates")
     public ResponseEntity<List<RescuedResponseDto>> transferCandidates(
-            @RequestParam(defaultValue = "false") boolean usePeriod,
-            @RequestParam(defaultValue = "0") int dueWithinDays,
-            @RequestParam(defaultValue = "false") boolean useSeverity,
-            @RequestParam(required = false) List<String> conditions,
-            @RequestParam(required = false) String sort,
-            @RequestParam(defaultValue = "desc") String order,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "400") int limit,
+            @RequestParam(name = "usePeriod",      required = false, defaultValue = "false") boolean usePeriod,
+            @RequestParam(name = "dueWithinDays",  required = false, defaultValue = "0")     int dueWithinDays,
+            @RequestParam(name = "useSeverity",    required = false, defaultValue = "false") boolean useSeverity,
+            @RequestParam(name = "conditions",     required = false)                          List<String> conditions,
+            @RequestParam(name = "sort",           required = false)                          String sort,
+            @RequestParam(name = "order",          required = false, defaultValue = "desc")   String order,
+            @RequestParam(name = "offset",         required = false, defaultValue = "0")      int offset,
+            @RequestParam(name = "limit",          required = false, defaultValue = "400")    int limit,
             @AuthenticationPrincipal(expression = "shelterId") Long currentShelterId
     ) {
         var list = rescuedQueryService.getTransferCandidates(
