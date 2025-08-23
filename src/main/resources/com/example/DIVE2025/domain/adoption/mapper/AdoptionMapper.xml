@@ -42,4 +42,20 @@
         WHERE tr.to_shelter_id = #{adoptionId}
 
     </select>
+    <select id="recommendAdoptCenter"
+            resultType="com.example.DIVE2025.domain.adoption.dto.RecommendAdoptCenterResponseDto">
+        SELECT s.id, s.username, s.tel, s.addr,
+               (6371 * ACOS(
+                       COS(RADIANS( #{fromShelterLatitude}))
+                           * COS(RADIANS(s.latitude))
+                           * COS(RADIANS(s.longitude) - RADIANS( #{fromShelterLongitude}))
+                           + SIN(RADIANS(#{fromShelterLatitude})) * SIN(RADIANS(s.latitude))
+                       )) AS distance
+        FROM shelter s
+        WHERE s.longitude != #{fromShelterLongitude} AND
+              (s.id = 7 or s.id = 8)
+        ORDER BY distance
+        LIMIT 10;
+
+    </select>
 </mapper>

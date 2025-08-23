@@ -1,6 +1,8 @@
 package com.example.DIVE2025.domain.adoption.service;
 
 import com.example.DIVE2025.domain.adoption.dto.FindAdoptionListResponseDto;
+import com.example.DIVE2025.domain.adoption.dto.RecommendAdoptCenterRequestDto;
+import com.example.DIVE2025.domain.adoption.dto.RecommendAdoptCenterResponseDto;
 import com.example.DIVE2025.domain.adoption.mapper.AdoptionMapper;
 import com.example.DIVE2025.domain.transferRequest.Mapper.TransferMapper;
 import com.example.DIVE2025.domain.transferRequest.dto.TrSaveRequestDto;
@@ -24,6 +26,10 @@ public class AdoptionService {
         this.transferMapper = transferMapper;
         this.transportMapper = transportMapper;
 
+    }
+
+    public List<RecommendAdoptCenterResponseDto> findAdoptCenterByFromShelter(RecommendAdoptCenterRequestDto recommendAdoptCenterRequestDto) {
+        return adoptionMapper.recommendAdoptCenter(recommendAdoptCenterRequestDto);
     }
 
     public List<FindAdoptionListResponseDto> getAdoptionListByShelterId(Long shelterId) {
