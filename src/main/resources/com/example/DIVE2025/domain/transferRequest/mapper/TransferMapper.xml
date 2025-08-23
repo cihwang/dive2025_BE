@@ -48,7 +48,9 @@
                  JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
                  JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
                  JOIN rescued r ON tr.rescued_id = r.id
-        WHERE tr.from_shelter_id = #{fromShelterId}
+        WHERE tr.from_shelter_id = #{fromShelterId} AND
+              tr.to_shelter_id != 7 AND
+              tr.to_shelter_id != 8;
     </select>
 
 

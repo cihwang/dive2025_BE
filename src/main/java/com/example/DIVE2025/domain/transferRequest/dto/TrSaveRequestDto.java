@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 public class TrSaveRequestDto {
     private Long rescuedId;
     private Long fromShelterId;
-    private Long toShelterId;
+    private Long toShelterId; // toAdoptionId
 }

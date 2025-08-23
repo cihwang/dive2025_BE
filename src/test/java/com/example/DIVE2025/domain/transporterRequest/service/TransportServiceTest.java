@@ -22,11 +22,11 @@ class TransportServiceTest {
     void saveTransportRequest() {
 
         TransportRequestSaveDto transportRequestSaveDto = TransportRequestSaveDto.builder()
-                .transferRequestId(3L)
+                .transferRequestId(12L)
                 .transporterId(1L)
                 .message("이날까지 꼭 옮겨주세요")
                 .fromShelterId(1L)
-                .toShelterId(2L)
+                .toShelterId(7L)
                 .build();
 
         int i = transportService.saveTransportRequest(transportRequestSaveDto);
@@ -37,10 +37,10 @@ class TransportServiceTest {
     void updateTransportRequest() {
 
         UpdateTprRequestDto updateTprRequestDto = UpdateTprRequestDto.builder()
-                .id(1L)
-                .message("차가 없습니다")
-                .decisionStatus(TprDecisionStatus.ACCEPT)
-                .transferRequestId(3L)
+                .id(2L)
+                .message("nononononononnono")
+                .decisionStatus(TprDecisionStatus.REJECT)
+                .transferRequestId(12L)
                 .build();
 
         int i = transportService.updateTransportRequest(updateTprRequestDto);

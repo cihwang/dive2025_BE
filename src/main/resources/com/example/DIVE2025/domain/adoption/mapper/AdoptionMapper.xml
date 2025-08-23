@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.DIVE2025.domain.adoption.mapper.AdoptionMapper">
+
+    <select id="findAdoptionListByShelterId"
+            resultType="com.example.DIVE2025.domain.adoption.dto.FindAdoptionListResponseDto">
+        SELECT r.id, r.shelter_id, r.desertion_no,
+               REPLACE(REPLACE(r.age,'(60일미만)',''),'(년생)','') AS parse_age,
+               REPLACE(r.weight,'(Kg)','') AS parse_weight,
+               r.sex,
+               r.animal_condition
+        FROM rescued r
+        WHERE r.shelter_id = #{shelterId} AND
+              r.animal_condition = "NORMAL";
+
+    </select>
+
+    <select id="getTransferByAdoptionId"
+            resultType="com.example.DIVE2025.domain.transferRequest.dto.TransferRequestResponseDto">
+        SELECT tr.id,
+               tr.rescued_id,
+               sh1.username   AS from_shelter_name,
+               sh2.username   AS to_shelter_name,
+               sh1.latitude   AS from_shelter_latitude,
+               sh1.longitude  AS from_shelter_longitude,
+               tr.request_status,
+               tr.transporter_id,
+               tr.message,
+               tr.created_at,
+               tr.updated_at,
+               r.sex,
+               r.neuter_yn,
+               r.animal_condition,
+               r.kind_nm
+        FROM transfer_request tr
+                 JOIN shelter sh1 ON tr.from_shelter_id = sh1.id
+                 JOIN shelter sh2 ON tr.to_shelter_id = sh2.id
+                 JOIN rescued r ON tr.rescued_id = r.id
+        WHERE tr.to_shelter_id = #{adoptionId}
+
+    </select>
+</mapper>

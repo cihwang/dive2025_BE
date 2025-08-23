@@ -18,7 +18,7 @@
                 + SIN(RADIANS(#{latitude})) * SIN(RADIANS(s.latitude))
             )) AS distance,
         (sc.total_capacity - sc.cur_capacity) AS remainCapacity,
-        FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') AS shelterRank,
+        FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL','ADOPTION') AS shelterRank,
         FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')  AS animalRank
         FROM shelter s
         JOIN (
@@ -31,9 +31,11 @@
             )
         ) sc ON sc.shelter_id = s.id
         WHERE
+            s.id != 7 AND
+            s.id != 8 AND
             s.longitude != #{longitude} AND
             (sc.total_capacity - sc.cur_capacity) > 0 AND
-            FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL') &gt;= FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')
+            FIELD(s.shelter_feature, 'GENERAL','VET','HOSPITAL','ADOPTION') &gt;= FIELD( #{animalCondition}, 'NORMAL','MILD','SEVERE')
         ORDER BY shelterRank, remainCapacity DESC, distance
     </select>
 
