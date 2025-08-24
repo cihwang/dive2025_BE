@@ -68,7 +68,7 @@
 ## 👥 팀원 소개
 | 이름   | 역할       | GitHub                                      | 주요 담당 업무 |
 |--------|------------|---------------------------------------------|----------------|
-| 황찬일 | BE / Infra | [GitHub](https://github.com/cihwang)        | 보호소·운송자 추천 알고리즘 구현, CI/CD 자동화, 인프라 관리 |
+| 황찬일 | BE / Infra | [GitHub](https://github.com/cihwang)        | 보호소·운송자 추천 로직 구현, CI/CD 자동화, 인프라 관리 |
 | 김종영 | FE         | [GitHub](https://github.com/jong-0)         | 로그인 기능 개발, 프론트엔드 UI/UX 구현 |
 | 전민주 | PM / BE    | [GitHub](https://github.com/odeto1310)      | 프로젝트 총괄(PM), 공공데이터 API 연동 및 데이터 적재 |
 | 정안용 | DATA       | [GitHub](https://github.com/AnnyeongHae)    | 데이터 수집·정제, 분석 및 시각화 |
