@@ -4,8 +4,8 @@
  
 > Paw-On은 유기동물이 보호소에 입소된 이후, <u>건강 상태</u>와 <u>보호소 특성</u>을 고려하여 가장 적합한 보호소로 이송될 수 있도록 지원하는 네트워크 서비스입니다.  
 > 입양 이후가 아닌 **입양 전 이송 과정**에 초점을 맞추어, 동물의 안전한 이동과 보호 과정을 돕습니다.
+<img width="1580" height="918" alt="스크린샷 2025-09-06 오후 10 12 14" src="https://github.com/user-attachments/assets/d59d01fe-6dc5-498d-972d-fbcc1e0e1027" />
 
-## 📹 
 
 ![paw-on](https://paw-on.s3.ap-northeast-2.amazonaws.com/images/gif/paw-on.gif)
 
